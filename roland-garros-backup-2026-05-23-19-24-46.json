@@ -1,0 +1,1128 @@
+{
+  "version": 1,
+  "exportedAt": "2026-05-23T19:24:46.621Z",
+  "data": {
+    "rg_players": [
+      {
+        "name": "Max",
+        "score": 0,
+        "locked": false,
+        "predictions": {
+          "round0": [
+            "SINNER Jannik",
+            "CERUNDOLO Juan Manuel",
+            "LANDALUCE Martin",
+            "KOPRIVA Vit",
+            "RINDERKNECH Arthur",
+            "BERRETTINI Matteo",
+            "COMESANA Francisco",
+            "DARDERI Luciano",
+            "BUBLIK Alexander",
+            "FARIA Jaime",
+            "HURKACZ Hubert",
+            "TIAFOE Frances",
+            "ARNALDI Matteo",
+            "MULLER Alexandre",
+            "COLLIGNON Raphael",
+            "SHELTON Ben",
+            "AUGER-ALIASSIME Felix",
+            "BAEZ Sebastian",
+            "VAN ASSCHE Luca",
+            "NAKASHIMA Brandon",
+            "NORRIE Cameron",
+            "CILIC Marin",
+            "TABILO Alejandro",
+            "VACHEROT Valentin",
+            "COBOLLI Flavio",
+            "GIRON Marcos",
+            "ZHANG Zhizhen",
+            "TIEN Learner",
+            "CERUNDOLO Francisco",
+            "MONFILS Gael",
+            "POPYRIN Alexei",
+            "MEDVEDEV Danill",
+            "DE MINAUR Alex",
+            "BLOCKX Alexander",
+            "NAVONE Mariano",
+            "MENSIK Jakub",
+            "ETCHEVERRY Tomas Martin",
+            "KECMANOVIC Miomir",
+            "UGO CARABELLI Camilo",
+            "BUSE Ignacio",
+            "RUUD Casper",
+            "MEDJEDOVIC Hamad",
+            "SONEGO Lorenzo",
+            "PAUL Tommy",
+            "FONSECA Joao",
+            "PRIZMIC Dino",
+            "ROYER Valentin",
+            "DJOKOVIC Novak",
+            "FRITZ Taylor",
+            "MICHELSEN Alex",
+            "DIALLO Gabriel",
+            "JODAR Rafael",
+            "DAVIDOVICH FOKINA Alejandro",
+            "LLAMAS RUIZ Pablo",
+            "ATMANE Terence",
+            "LEHECKA Jiri",
+            "KHACHANOV Karen",
+            "JACQUET Kyrian",
+            "CINA Federico",
+            "WAWRINKA Stan",
+            "HUMBERT Ugo",
+            "HALYS Quentin",
+            "MACHAC Tomas",
+            "ZVEREV Alexander"
+          ],
+          "round1": [
+            "SINNER Jannik",
+            "LANDALUCE Martin",
+            "RINDERKNECH Arthur",
+            "DARDERI Luciano",
+            "BUBLIK Alexander",
+            "HURKACZ Hubert",
+            "ARNALDI Matteo",
+            "SHELTON Ben",
+            "AUGER-ALIASSIME Felix",
+            "NAKASHIMA Brandon",
+            "NORRIE Cameron",
+            "VACHEROT Valentin",
+            "COBOLLI Flavio",
+            "TIEN Learner",
+            "CERUNDOLO Francisco",
+            "MEDVEDEV Danill",
+            "DE MINAUR Alex",
+            "MENSIK Jakub",
+            "ETCHEVERRY Tomas Martin",
+            "BUSE Ignacio",
+            "RUUD Casper",
+            "PAUL Tommy",
+            "FONSECA Joao",
+            "DJOKOVIC Novak",
+            "MICHELSEN Alex",
+            "JODAR Rafael",
+            "DAVIDOVICH FOKINA Alejandro",
+            "LEHECKA Jiri",
+            "KHACHANOV Karen",
+            "WAWRINKA Stan",
+            "HUMBERT Ugo",
+            "ZVEREV Alexander"
+          ],
+          "round2": [
+            "SINNER Jannik",
+            "DARDERI Luciano",
+            "BUBLIK Alexander",
+            "SHELTON Ben",
+            "AUGER-ALIASSIME Felix",
+            "VACHEROT Valentin",
+            "TIEN Learner",
+            "MEDVEDEV Danill",
+            "DE MINAUR Alex",
+            "ETCHEVERRY Tomas Martin",
+            "RUUD Casper",
+            "DJOKOVIC Novak",
+            "JODAR Rafael",
+            "LEHECKA Jiri",
+            "KHACHANOV Karen",
+            "ZVEREV Alexander"
+          ],
+          "round3": [
+            "SINNER Jannik",
+            "SHELTON Ben",
+            "AUGER-ALIASSIME Felix",
+            "TIEN Learner",
+            "DE MINAUR Alex",
+            "RUUD Casper",
+            "LEHECKA Jiri",
+            "ZVEREV Alexander"
+          ],
+          "round4": [
+            "SINNER Jannik",
+            "TIEN Learner",
+            "RUUD Casper",
+            "ZVEREV Alexander"
+          ],
+          "round5": [
+            "SINNER Jannik",
+            "RUUD Casper"
+          ],
+          "round6": [
+            "SINNER Jannik"
+          ]
+        }
+      },
+      {
+        "name": "TOM",
+        "score": 0,
+        "locked": false,
+        "predictions": {
+          "round0": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "round1": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "round2": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "round3": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "round4": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "round5": [
+            null,
+            null
+          ],
+          "round6": [
+            null
+          ]
+        }
+      }
+    ],
+    "rg_results": {
+      "round0": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "round1": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "round2": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "round3": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "round4": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "round5": [
+        null,
+        null
+      ],
+      "round6": [
+        null
+      ]
+    },
+    "rg_rounds": [
+      {
+        "name": "Tour des 128",
+        "matches": 64,
+        "points": 1
+      },
+      {
+        "name": "Tour des 64",
+        "matches": 32,
+        "points": 2
+      },
+      {
+        "name": "Tour des 32",
+        "matches": 16,
+        "points": 4
+      },
+      {
+        "name": "Huitièmes",
+        "matches": 8,
+        "points": 8
+      },
+      {
+        "name": "Quarts",
+        "matches": 4,
+        "points": 16
+      },
+      {
+        "name": "Demi-finales",
+        "matches": 2,
+        "points": 30
+      },
+      {
+        "name": "Finale",
+        "matches": 1,
+        "points": 50
+      }
+    ],
+    "rg_initialPlayers": [
+      "SINNER Jannik",
+      "TABUR Clement",
+      "FEARNLEY Jacob",
+      "CERUNDOLO Juan Manuel",
+      "LANDALUCE Martin",
+      "PRADO ANGELO Juan Carlos",
+      "KOPRIVA Vit",
+      "MOUTET Corentin",
+      "RINDERKNECH Arthur",
+      "RODIONOV Jurij",
+      "FUCSOVICS Marton",
+      "BERRETTINI Matteo",
+      "QUINN Ethan",
+      "COMESANA Francisco",
+      "OFNER Sebastian",
+      "DARDERI Luciano",
+      "BUBLIK Alexander",
+      "STRUFF Jan-Lennard",
+      "FARIA Jaime",
+      "SHAPOVALOV Denis",
+      "MUNAR Jaume",
+      "HURKACZ Hubert",
+      "SPIZZIRRI Eliot",
+      "TIAFOE Frances",
+      "GRIEKSPOOR Tallon",
+      "ARNALDI Matteo",
+      "MULLER Alexandre",
+      "TSITSIPAS Stefanos",
+      "COLLIGNON Raphael",
+      "VUKIC Aleksandar",
+      "MERIDA Daniel",
+      "SHELTON Ben",
+      "AUGER-ALIASSIME Felix",
+      "ALTMAIER Daniel",
+      "BAEZ Sebastian",
+      "BURRUCHAGA Roman Andres",
+      "VAN ASSCHE Luca",
+      "KYPSON Patrick",
+      "BAUTISTA AGUT Roberto",
+      "NAKASHIMA Brandon",
+      "NORRIE Cameron",
+      "VALLEJO Adolfo Daniel",
+      "CILIC Marin",
+      "KOUAME Moise",
+      "TABILO Alejandro",
+      "MAJCHRZAK Kamil",
+      "FAUREL Thomas",
+      "VACHEROT Valentin",
+      "COBOLLI Flavio",
+      "PELLEGRINO Andrea",
+      "WU Yibing",
+      "GIRON Marcos",
+      "DIAZ ACOSTA Facundo",
+      "ZHANG Zhizhen",
+      "GARIN Cristian",
+      "TIEN Learner",
+      "CERUNDOLO Francisco",
+      "VAN DE ZANDSCHULP Botic",
+      "GASTON Hugo",
+      "MONFILS Gael",
+      "POPYRIN Alexei",
+      "SVAJDA Zachary",
+      "WALTON Adam",
+      "MEDVEDEV Danill",
+      "DE MINAUR Alex",
+      "SAMUEL Toby",
+      "BLOCKX Alexander",
+      "WONG Coleman",
+      "NAVONE Mariano",
+      "BROOKSBY Jenson",
+      "DROGUET Titouan",
+      "MENSIK Jakub",
+      "ETCHEVERRY Tomas Martin",
+      "BORGES Nuno",
+      "KECMANOVIC Miomir",
+      "MAROZSAN Fabian",
+      "NAVA Emilio",
+      "UGO CARABELLI Camilo",
+      "BUSE Ignacio",
+      "RUBLEV Andrey",
+      "RUUD Casper",
+      "SAFIULLIN Roman",
+      "MEDJEDOVIC Hamad",
+      "HANFMANN Yannick",
+      "SONEGO Lorenzo",
+      "HERBERT Pierre-Hugues",
+      "HIJIKATA Rinky",
+      "PAUL Tommy",
+      "FONSECA Joao",
+      "PAVLOVIC Luka",
+      "ZHENG Michael",
+      "PRIZMIC Dino",
+      "DELLIEN Hugo",
+      "ROYER Valentin",
+      "MPETSHI PERRICARD Giovanni",
+      "DJOKOVIC Novak",
+      "FRITZ Taylor",
+      "BASAVAREDDY Nishesh",
+      "SHEVCHENKO Alexander",
+      "MICHELSEN Alex",
+      "DUCKWORTH James",
+      "DIALLO Gabriel",
+      "KOVACEVIC Aleksandar",
+      "JODAR Rafael",
+      "DAVIDOVICH FOKINA Alejandro",
+      "DZUMHUR Damir",
+      "LLAMAS RUIZ Pablo",
+      "TIRANTE Thiago Agustin",
+      "KOKKINAKIS Thanasi",
+      "ATMANE Terence",
+      "CARRENO BUSTA Pablo",
+      "LEHECKA Jiri",
+      "KHACHANOV Karen",
+      "GEA Arthur",
+      "JACQUET Kyrian",
+      "TRUNGELLITI Marco",
+      "CINA Federico",
+      "OPELKA Reilly",
+      "WAWRINKA Stan",
+      "De Jong Jesper",
+      "HUMBERT Ugo",
+      "MANNARINO Adrian",
+      "HALYS Quentin",
+      "BELLUCCI Mattia",
+      "MACHAC Tomas",
+      "BERGS Zizou",
+      "BONZI Benjamin",
+      "ZVEREV Alexander"
+    ],
+    "rg_playerMeta": {
+      "SINNER Jannik": {
+        "seed": "1",
+        "nat": "ITA"
+      },
+      "TABUR Clement": {
+        "seed": "WC",
+        "nat": "FRA"
+      },
+      "FEARNLEY Jacob": {
+        "seed": "",
+        "nat": "GBR"
+      },
+      "CERUNDOLO Juan Manuel": {
+        "seed": "",
+        "nat": "ARG"
+      },
+      "LANDALUCE Martin": {
+        "seed": "",
+        "nat": "ESP"
+      },
+      "PRADO ANGELO Juan Carlos": {
+        "seed": "Q",
+        "nat": "BOL"
+      },
+      "KOPRIVA Vit": {
+        "seed": "",
+        "nat": "CZE"
+      },
+      "MOUTET Corentin": {
+        "seed": "30",
+        "nat": "FRA"
+      },
+      "RINDERKNECH Arthur": {
+        "seed": "22",
+        "nat": "FRA"
+      },
+      "RODIONOV Jurij": {
+        "seed": "Q",
+        "nat": "AUT"
+      },
+      "FUCSOVICS Marton": {
+        "seed": "",
+        "nat": "HUN"
+      },
+      "BERRETTINI Matteo": {
+        "seed": "",
+        "nat": "ITA"
+      },
+      "QUINN Ethan": {
+        "seed": "",
+        "nat": "USA"
+      },
+      "COMESANA Francisco": {
+        "seed": "",
+        "nat": "ARG"
+      },
+      "OFNER Sebastian": {
+        "seed": "",
+        "nat": "AUT"
+      },
+      "DARDERI Luciano": {
+        "seed": "14",
+        "nat": "ITA"
+      },
+      "BUBLIK Alexander": {
+        "seed": "9",
+        "nat": "KAZ"
+      },
+      "STRUFF Jan-Lennard": {
+        "seed": "",
+        "nat": "GER"
+      },
+      "FARIA Jaime": {
+        "seed": "Q",
+        "nat": "POR"
+      },
+      "SHAPOVALOV Denis": {
+        "seed": "",
+        "nat": "CAN"
+      },
+      "MUNAR Jaume": {
+        "seed": "",
+        "nat": "ESP"
+      },
+      "HURKACZ Hubert": {
+        "seed": "",
+        "nat": "POL"
+      },
+      "SPIZZIRRI Eliot": {
+        "seed": "",
+        "nat": "USA"
+      },
+      "TIAFOE Frances": {
+        "seed": "19",
+        "nat": "USA"
+      },
+      "GRIEKSPOOR Tallon": {
+        "seed": "29",
+        "nat": "NED"
+      },
+      "ARNALDI Matteo": {
+        "seed": "",
+        "nat": "ITA"
+      },
+      "MULLER Alexandre": {
+        "seed": "",
+        "nat": "FRA"
+      },
+      "TSITSIPAS Stefanos": {
+        "seed": "",
+        "nat": "GRE"
+      },
+      "COLLIGNON Raphael": {
+        "seed": "",
+        "nat": "BEL"
+      },
+      "VUKIC Aleksandar": {
+        "seed": "",
+        "nat": "AUS"
+      },
+      "MERIDA Daniel": {
+        "seed": "",
+        "nat": "ESP"
+      },
+      "SHELTON Ben": {
+        "seed": "5",
+        "nat": "USA"
+      },
+      "AUGER-ALIASSIME Felix": {
+        "seed": "4",
+        "nat": "CAN"
+      },
+      "ALTMAIER Daniel": {
+        "seed": "",
+        "nat": "GER"
+      },
+      "BAEZ Sebastian": {
+        "seed": "",
+        "nat": "ARG"
+      },
+      "BURRUCHAGA Roman Andres": {
+        "seed": "",
+        "nat": "ARG"
+      },
+      "VAN ASSCHE Luca": {
+        "seed": "",
+        "nat": "FRA"
+      },
+      "KYPSON Patrick": {
+        "seed": "",
+        "nat": "USA"
+      },
+      "BAUTISTA AGUT Roberto": {
+        "seed": "",
+        "nat": "ESP"
+      },
+      "NAKASHIMA Brandon": {
+        "seed": "31",
+        "nat": "USA"
+      },
+      "NORRIE Cameron": {
+        "seed": "20",
+        "nat": "GRB"
+      },
+      "VALLEJO Adolfo Daniel": {
+        "seed": "",
+        "nat": "PAR"
+      },
+      "CILIC Marin": {
+        "seed": "",
+        "nat": "CRO"
+      },
+      "KOUAME Moise": {
+        "seed": "WC",
+        "nat": "FRA"
+      },
+      "TABILO Alejandro": {
+        "seed": "",
+        "nat": "CHI"
+      },
+      "MAJCHRZAK Kamil": {
+        "seed": "",
+        "nat": "POL"
+      },
+      "FAUREL Thomas": {
+        "seed": "Q",
+        "nat": "FRA"
+      },
+      "VACHEROT Valentin": {
+        "seed": "16",
+        "nat": "MON"
+      },
+      "COBOLLI Flavio": {
+        "seed": "10",
+        "nat": "ITA"
+      },
+      "PELLEGRINO Andrea": {
+        "seed": "Q",
+        "nat": "ITA"
+      },
+      "WU Yibing": {
+        "seed": "",
+        "nat": "CHN"
+      },
+      "GIRON Marcos": {
+        "seed": "",
+        "nat": "USA"
+      },
+      "DIAZ ACOSTA Facundo": {
+        "seed": "Q",
+        "nat": "ARG"
+      },
+      "ZHANG Zhizhen": {
+        "seed": "",
+        "nat": "CHN"
+      },
+      "GARIN Cristian": {
+        "seed": "",
+        "nat": "CHI"
+      },
+      "TIEN Learner": {
+        "seed": "18",
+        "nat": "USA"
+      },
+      "CERUNDOLO Francisco": {
+        "seed": "25",
+        "nat": "ARG"
+      },
+      "VAN DE ZANDSCHULP Botic": {
+        "seed": "",
+        "nat": "NED"
+      },
+      "GASTON Hugo": {
+        "seed": "WC",
+        "nat": "FRA"
+      },
+      "MONFILS Gael": {
+        "seed": "WC",
+        "nat": "FRA"
+      },
+      "POPYRIN Alexei": {
+        "seed": "",
+        "nat": "AUS"
+      },
+      "SVAJDA Zachary": {
+        "seed": "",
+        "nat": "USA"
+      },
+      "WALTON Adam": {
+        "seed": "WC",
+        "nat": "AUS"
+      },
+      "MEDVEDEV Danill": {
+        "seed": "6",
+        "nat": "---"
+      },
+      "DE MINAUR Alex": {
+        "seed": "8",
+        "nat": "AUS"
+      },
+      "SAMUEL Toby": {
+        "seed": "Q",
+        "nat": "GBR"
+      },
+      "BLOCKX Alexander": {
+        "seed": "",
+        "nat": "BEL"
+      },
+      "WONG Coleman": {
+        "seed": "LL",
+        "nat": "HKG"
+      },
+      "NAVONE Mariano": {
+        "seed": "",
+        "nat": "ARG"
+      },
+      "BROOKSBY Jenson": {
+        "seed": "",
+        "nat": "USA"
+      },
+      "DROGUET Titouan": {
+        "seed": "WC",
+        "nat": "FRA"
+      },
+      "MENSIK Jakub": {
+        "seed": "26",
+        "nat": "CZE"
+      },
+      "ETCHEVERRY Tomas Martin": {
+        "seed": "23",
+        "nat": "ARG"
+      },
+      "BORGES Nuno": {
+        "seed": "",
+        "nat": "POR"
+      },
+      "KECMANOVIC Miomir": {
+        "seed": "",
+        "nat": "SRB"
+      },
+      "MAROZSAN Fabian": {
+        "seed": "",
+        "nat": "HUN"
+      },
+      "NAVA Emilio": {
+        "seed": "Q",
+        "nat": "USA"
+      },
+      "UGO CARABELLI Camilo": {
+        "seed": "Q",
+        "nat": "ARG"
+      },
+      "BUSE Ignacio": {
+        "seed": "",
+        "nat": "PER"
+      },
+      "RUBLEV Andrey": {
+        "seed": "11",
+        "nat": "---"
+      },
+      "RUUD Casper": {
+        "seed": "15",
+        "nat": "NOR"
+      },
+      "SAFIULLIN Roman": {
+        "seed": "Q",
+        "nat": "---"
+      },
+      "MEDJEDOVIC Hamad": {
+        "seed": "",
+        "nat": "SRB"
+      },
+      "HANFMANN Yannick": {
+        "seed": "",
+        "nat": "GER"
+      },
+      "SONEGO Lorenzo": {
+        "seed": "",
+        "nat": "ITA"
+      },
+      "HERBERT Pierre-Hugues": {
+        "seed": "Q",
+        "nat": "FRA"
+      },
+      "HIJIKATA Rinky": {
+        "seed": "",
+        "nat": "AUS"
+      },
+      "PAUL Tommy": {
+        "seed": "24",
+        "nat": "USA"
+      },
+      "FONSECA Joao": {
+        "seed": "28",
+        "nat": "BRA"
+      },
+      "PAVLOVIC Luka": {
+        "seed": "Q",
+        "nat": "FRA"
+      },
+      "ZHENG Michael": {
+        "seed": "Q",
+        "nat": "USA"
+      },
+      "PRIZMIC Dino": {
+        "seed": "",
+        "nat": "CRO"
+      },
+      "DELLIEN Hugo": {
+        "seed": "Q",
+        "nat": "BOL"
+      },
+      "ROYER Valentin": {
+        "seed": "",
+        "nat": "FRA"
+      },
+      "MPETSHI PERRICARD Giovanni": {
+        "seed": "",
+        "nat": "FRA"
+      },
+      "DJOKOVIC Novak": {
+        "seed": "3",
+        "nat": "SRB"
+      },
+      "FRITZ Taylor": {
+        "seed": "7",
+        "nat": "USA"
+      },
+      "BASAVAREDDY Nishesh": {
+        "seed": "WC",
+        "nat": "USA"
+      },
+      "SHEVCHENKO Alexander": {
+        "seed": "",
+        "nat": "KAZ"
+      },
+      "MICHELSEN Alex": {
+        "seed": "",
+        "nat": "USA"
+      },
+      "DUCKWORTH James": {
+        "seed": "",
+        "nat": "AUS"
+      },
+      "DIALLO Gabriel": {
+        "seed": "",
+        "nat": "CAN"
+      },
+      "KOVACEVIC Aleksandar": {
+        "seed": "",
+        "nat": "USA"
+      },
+      "JODAR Rafael": {
+        "seed": "27",
+        "nat": "ESP"
+      },
+      "DAVIDOVICH FOKINA Alejandro": {
+        "seed": "21",
+        "nat": "ESP"
+      },
+      "DZUMHUR Damir": {
+        "seed": "",
+        "nat": "BIH"
+      },
+      "LLAMAS RUIZ Pablo": {
+        "seed": "Q",
+        "nat": "ESP"
+      },
+      "TIRANTE Thiago Agustin": {
+        "seed": "",
+        "nat": "ARG"
+      },
+      "KOKKINAKIS Thanasi": {
+        "seed": "",
+        "nat": "AUS"
+      },
+      "ATMANE Terence": {
+        "seed": "",
+        "nat": "FRA"
+      },
+      "CARRENO BUSTA Pablo": {
+        "seed": "",
+        "nat": "ESP"
+      },
+      "LEHECKA Jiri": {
+        "seed": "12",
+        "nat": "CZE"
+      },
+      "KHACHANOV Karen": {
+        "seed": "13",
+        "nat": "---"
+      },
+      "GEA Arthur": {
+        "seed": "WC",
+        "nat": "FRA"
+      },
+      "JACQUET Kyrian": {
+        "seed": "Q",
+        "nat": "FRA"
+      },
+      "TRUNGELLITI Marco": {
+        "seed": "",
+        "nat": "ARG"
+      },
+      "CINA Federico": {
+        "seed": "Q",
+        "nat": "ITA"
+      },
+      "OPELKA Reilly": {
+        "seed": "",
+        "nat": "USA"
+      },
+      "WAWRINKA Stan": {
+        "seed": "",
+        "nat": "SUI"
+      },
+      "De Jong Jesper": {
+        "seed": "LL",
+        "nat": "NED"
+      },
+      "HUMBERT Ugo": {
+        "seed": "32",
+        "nat": "FRA"
+      },
+      "MANNARINO Adrian": {
+        "seed": "",
+        "nat": "FRA"
+      },
+      "HALYS Quentin": {
+        "seed": "",
+        "nat": "FRA"
+      },
+      "BELLUCCI Mattia": {
+        "seed": "",
+        "nat": "ITA"
+      },
+      "MACHAC Tomas": {
+        "seed": "",
+        "nat": "CZE"
+      },
+      "BERGS Zizou": {
+        "seed": "",
+        "nat": "BEL"
+      },
+      "BONZI Benjamin": {
+        "seed": "",
+        "nat": "FRA"
+      },
+      "ZVEREV Alexander": {
+        "seed": "2",
+        "nat": "GER"
+      }
+    }
+  }
+}
