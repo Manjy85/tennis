@@ -60,19 +60,56 @@ export function exportData() {
   };
 
   const json = JSON.stringify(payload, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-  link.href = url;
-  link.download = `roland-garros-backup-${stamp}.json`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  localStorage.setItem('rg_lastBackup', json);
+
+  fetch('http://localhost:5177/save-backup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: json
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error('export_failed');
+      return res.json();
+    })
+    .then((data) => {
+      alert(`Backup ecrit dans le repo: ${data.path}`);
+    })
+    .catch(() => {
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'roland-garros.json';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      alert('Serveur local non disponible, fichier telecharge.');
+    });
 }
 
 export function triggerImport() {
+  const backup = localStorage.getItem('rg_lastBackup');
+  if (backup) {
+    if (!confirm('Importer la derniere sauvegarde locale va remplacer les donnees actuelles. Continuer ?')) return;
+    try {
+      const parsed = JSON.parse(backup);
+      if (!parsed || !parsed.data) throw new Error('Format invalide');
+      const data = parsed.data;
+
+      if (data.rg_players) localStorage.setItem('rg_players', JSON.stringify(data.rg_players));
+      if (data.rg_results) localStorage.setItem('rg_results', JSON.stringify(data.rg_results));
+      if (data.rg_rounds) localStorage.setItem('rg_rounds', JSON.stringify(data.rg_rounds));
+      if (data.rg_initialPlayers) localStorage.setItem('rg_initialPlayers', JSON.stringify(data.rg_initialPlayers));
+      if (data.rg_playerMeta) localStorage.setItem('rg_playerMeta', JSON.stringify(data.rg_playerMeta));
+
+      location.reload();
+      return;
+    } catch (err) {
+      alert('Sauvegarde locale invalide.');
+    }
+  }
+
   const input = document.getElementById('importFile');
   input.value = '';
   input.click();

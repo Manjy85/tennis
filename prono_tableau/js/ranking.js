@@ -12,6 +12,18 @@ export function calculateScore(player) {
   return score;
 }
 
+export function calculateScoreByRound(player) {
+  return state.rounds.map((round, roundIndex) => {
+    let roundScore = 0;
+    player.predictions[`round${roundIndex}`].forEach((winner, matchIndex) => {
+      if (winner && winner === state.officialResults[`round${roundIndex}`][matchIndex]) {
+        roundScore += round.points;
+      }
+    });
+    return roundScore;
+  });
+}
+
 export function calculateMaxPossibleScore(player) {
   const getPossiblePlayers = (roundIndex, matchIndex) => {
     const officialWinner = state.officialResults[`round${roundIndex}`][matchIndex];
@@ -63,17 +75,48 @@ export function calculateAccuracy(player) {
   return { percent, totalCorrect, totalPlayed };
 }
 
+export function calculateAccuracyByRound(player) {
+  return state.rounds.map((round, roundIndex) => {
+    let totalPlayed = 0;
+    let totalCorrect = 0;
+    player.predictions[`round${roundIndex}`].forEach((winner, matchIndex) => {
+      const officialWinner = state.officialResults[`round${roundIndex}`][matchIndex];
+      if (officialWinner === null) return;
+      totalPlayed += 1;
+      if (winner && winner === officialWinner) totalCorrect += 1;
+    });
+
+    if (totalPlayed === 0) return { percent: 0, totalCorrect: 0, totalPlayed: 0 };
+    const percent = Math.round((totalCorrect / totalPlayed) * 100);
+    return { percent, totalCorrect, totalPlayed };
+  });
+}
+
 export function showRanking() {
   state.players.forEach(p => p.score = calculateScore(p));
   const sorted = [...state.players].sort((a, b) => b.score - a.score);
 
   let html = `<h2>Classement general</h2>
-    <table><tr><th>#</th><th>Joueur</th><th>Statut</th><th>Points</th><th>Max possible</th><th>Precision</th></tr>`;
+    <table><tr><th>#</th><th>Joueur</th><th>Statut</th>`;
+  state.rounds.forEach((round, roundIndex) => {
+    html += `<th title="${round.name}">R${roundIndex + 1}</th>`;
+  });
+  html += `<th>Points</th><th>Max possible</th><th>Precision</th></tr>`;
   sorted.forEach((p, index) => {
     const maxPossible = calculateMaxPossibleScore(p);
     const accuracy = calculateAccuracy(p);
     const accuracyLabel = accuracy.totalPlayed === 0 ? '-' : `${accuracy.percent}% (${accuracy.totalCorrect}/${accuracy.totalPlayed})`;
-    html += `<tr><td>${index + 1}</td><td><strong>${p.name}</strong></td><td>${p.locked ? '🔒 Pret' : '✏️ En cours'}</td><td style="font-weight:bold; color:#0c6b2f;">${p.score} pts</td><td>${maxPossible} pts</td><td>${accuracyLabel}</td></tr>`;
+    const roundScores = calculateScoreByRound(p);
+    const roundAccuracies = calculateAccuracyByRound(p);
+    html += `<tr><td>${index + 1}</td><td><strong>${p.name}</strong></td><td>${p.locked ? '🔒 Pret' : '✏️ En cours'}</td>`;
+    roundScores.forEach((score, roundIndex) => {
+      const roundAccuracy = roundAccuracies[roundIndex];
+      const percentLabel = roundAccuracy.totalPlayed === 0
+        ? '-'
+        : `${roundAccuracy.percent}% (${roundAccuracy.totalCorrect}/${roundAccuracy.totalPlayed})`;
+      html += `<td>${score} pts<br><small>${percentLabel}</small></td>`;
+    });
+    html += `<td style="font-weight:bold; color:#0c6b2f;">${p.score} pts</td><td>${maxPossible} pts</td><td>${accuracyLabel}</td></tr>`;
   });
   html += `</table>`;
   document.getElementById('content').innerHTML = html;
