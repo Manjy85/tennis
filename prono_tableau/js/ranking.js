@@ -13,14 +13,34 @@ export function calculateScore(player) {
 }
 
 export function calculateMaxPossibleScore(player) {
+  const getPossiblePlayers = (roundIndex, matchIndex) => {
+    const officialWinner = state.officialResults[`round${roundIndex}`][matchIndex];
+    if (officialWinner) return [officialWinner];
+
+    if (roundIndex === 0) {
+      const p1 = state.initialPlayers[matchIndex * 2];
+      const p2 = state.initialPlayers[matchIndex * 2 + 1];
+      return [p1, p2].filter(Boolean);
+    }
+
+    const left = getPossiblePlayers(roundIndex - 1, matchIndex * 2);
+    const right = getPossiblePlayers(roundIndex - 1, matchIndex * 2 + 1);
+    return Array.from(new Set([...left, ...right]));
+  };
+
   let score = 0;
   state.rounds.forEach((round, roundIndex) => {
     player.predictions[`round${roundIndex}`].forEach((winner, matchIndex) => {
       if (!winner) return;
       const officialWinner = state.officialResults[`round${roundIndex}`][matchIndex];
-      if (officialWinner === null || officialWinner === winner) {
+      if (officialWinner === winner) {
         score += round.points;
+        return;
       }
+      if (officialWinner !== null) return;
+
+      const possiblePlayers = getPossiblePlayers(roundIndex, matchIndex);
+      if (possiblePlayers.includes(winner)) score += round.points;
     });
   });
   return score;
