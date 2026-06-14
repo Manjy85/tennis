@@ -144,6 +144,24 @@ function buildJoueurs() {
   </div>`;
 
   html += `<div class="box">
+    <h3>Pronostics tableau (${state.rg_players.length} participants)</h3>`;
+  if (state.rg_players.length === 0) {
+    html += `<p style="color:#888;">Aucun pronostic tableau pour ce tournoi.</p>`;
+  } else {
+    html += `<table><thead><tr><th>Pseudo</th><th>Statut</th><th>Score</th><th></th></tr></thead><tbody>`;
+    state.rg_players.forEach(p => {
+      html += `<tr>
+        <td><strong>${p.name}</strong></td>
+        <td>${p.locked ? '🔒 Verrouillé' : '✏️ En cours'}</td>
+        <td>${p.score || 0} pts</td>
+        <td><button class="btn-red" style="padding:6px 12px; font-size:12px;" onclick="adminDeleteTableauPlayer('${p.name.replace(/'/g, "\\'")}')">Supprimer</button></td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  html += `</div>`;
+
+  html += `<div class="box">
     <h3>Têtes de série & Nationalités</h3>
     <table>
       <thead><tr><th>#</th><th>Joueur</th><th>Tête de série</th><th>Nat. (3 lettres)</th></tr></thead>
@@ -268,6 +286,22 @@ function buildMatchs() {
     });
   }
   html += `</div>`;
+
+  if (state.pm_players.length > 0) {
+    html += `<div class="box">
+      <h3>Pronostics match (${state.pm_players.length} participants)</h3>
+      <table><thead><tr><th>Pseudo</th><th>Matchs pronostiqués</th><th></th></tr></thead><tbody>`;
+    state.pm_players.forEach(p => {
+      const count = Object.keys(p.predictions || {}).length;
+      html += `<tr>
+        <td><strong>${p.name}</strong></td>
+        <td>${count}</td>
+        <td><button class="btn-red" style="padding:6px 12px; font-size:12px;" onclick="adminDeleteMatchPlayer('${p.name.replace(/'/g, "\\'")}')">Supprimer</button></td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
   return html;
 }
 
@@ -473,6 +507,20 @@ window.adminDeleteMatch = (id) => {
   if (!confirm('Supprimer ce match ? Les pronostics liés seront perdus.')) return;
   state.matches = state.matches.filter(m => m.id !== id);
   state.pm_players.forEach(p => { if (p.predictions) delete p.predictions[id]; });
+  savePmMatch();
+  showTab('matchs');
+};
+
+window.adminDeleteTableauPlayer = (name) => {
+  if (!confirm(`Supprimer le pronostic tableau de "${name}" ? Irréversible.`)) return;
+  state.rg_players = state.rg_players.filter(p => p.name !== name);
+  saveTableau();
+  showTab('joueurs');
+};
+
+window.adminDeleteMatchPlayer = (name) => {
+  if (!confirm(`Supprimer les pronostics match de "${name}" ? Irréversible.`)) return;
+  state.pm_players = state.pm_players.filter(p => p.name !== name);
   savePmMatch();
   showTab('matchs');
 };
