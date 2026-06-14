@@ -1,0 +1,10 @@
+{
+  "hosting": {
+    "public": "prono_tableau",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

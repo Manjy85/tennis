@@ -1,3 +1,5 @@
+import { loadAppConfig, saveAppConfig, loadAllTournaments, loadTournament, saveTournament } from './firebase.js';
+
 const defaultInitialPlayers = [
   'Alcaraz', 'Muller', 'Rune', 'Paul',
   'Ruud', 'Fils', 'Zverev', 'Goffin',
@@ -12,19 +14,21 @@ const defaultRounds = [
   { name: 'Finale', matches: 1, points: 40 }
 ];
 
-const defaultResults = {
-  round0: Array(8).fill(null),
-  round1: Array(4).fill(null),
-  round2: Array(2).fill(null),
-  round3: Array(1).fill(null)
-};
+function makeDefaultResults(rounds) {
+  const r = {};
+  rounds.forEach((round, i) => { r[`round${i}`] = Array(round.matches).fill(null); });
+  return r;
+}
 
 export const state = {
-  initialPlayers: JSON.parse(localStorage.getItem('rg_initialPlayers')) || defaultInitialPlayers,
-  rounds: JSON.parse(localStorage.getItem('rg_rounds')) || defaultRounds,
-  officialResults: JSON.parse(localStorage.getItem('rg_results')) || defaultResults,
-  players: JSON.parse(localStorage.getItem('rg_players')) || [],
-  playerMeta: JSON.parse(localStorage.getItem('rg_playerMeta')) || {}
+  currentTournamentId: null,
+  tournamentName: '',
+  tournamentList: [],
+  initialPlayers: [...defaultInitialPlayers],
+  rounds: defaultRounds.map(r => ({ ...r })),
+  officialResults: makeDefaultResults(defaultRounds),
+  players: [],
+  playerMeta: {}
 };
 
 export const uiState = {
@@ -33,12 +37,63 @@ export const uiState = {
   hiddenRounds: new Set()
 };
 
+export async function loadState() {
+  const [appConfig, allTournaments] = await Promise.all([loadAppConfig(), loadAllTournaments()]);
+  state.tournamentList = allTournaments.map(t => ({ id: t.id, name: t.name || t.id }));
+
+  const activeId = (appConfig.activeTournamentId && allTournaments.find(t => t.id === appConfig.activeTournamentId))
+    ? appConfig.activeTournamentId
+    : (allTournaments.length > 0 ? allTournaments[0].id : null);
+
+  if (activeId) {
+    await switchTournament(activeId);
+  } else {
+    ensurePlayerMeta();
+  }
+}
+
+export async function switchTournament(id) {
+  const data = await loadTournament(id);
+  if (!data) return;
+  state.currentTournamentId = id;
+  state.tournamentName = data.name || id;
+  state.initialPlayers = data.rg_initialPlayers || [...defaultInitialPlayers];
+  state.rounds = data.rg_rounds || defaultRounds.map(r => ({ ...r }));
+  state.officialResults = data.rg_results || makeDefaultResults(state.rounds);
+  state.players = data.rg_players || [];
+  state.playerMeta = data.rg_playerMeta || {};
+  ensurePlayerMeta();
+  saveAppConfig({ activeTournamentId: id }).catch(() => {});
+}
+
+export async function createTournament(name) {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const id = `${slug}-${Date.now()}`;
+  const rounds = defaultRounds.map(r => ({ ...r }));
+  await saveTournament(id, {
+    name,
+    createdAt: new Date().toISOString(),
+    rg_initialPlayers: Array(16).fill('').map((_, i) => `Joueur ${i + 1}`),
+    rg_rounds: rounds,
+    rg_results: makeDefaultResults(rounds),
+    rg_players: [],
+    rg_playerMeta: {}
+  });
+  state.tournamentList.push({ id, name });
+  await switchTournament(id);
+  return id;
+}
+
 export function save() {
-  localStorage.setItem('rg_players', JSON.stringify(state.players));
-  localStorage.setItem('rg_results', JSON.stringify(state.officialResults));
-  localStorage.setItem('rg_rounds', JSON.stringify(state.rounds));
-  localStorage.setItem('rg_initialPlayers', JSON.stringify(state.initialPlayers));
-  localStorage.setItem('rg_playerMeta', JSON.stringify(state.playerMeta));
+  if (!state.currentTournamentId) return;
+  saveTournament(state.currentTournamentId, {
+    name: state.tournamentName,
+    rg_initialPlayers: state.initialPlayers,
+    rg_rounds: state.rounds,
+    rg_results: state.officialResults,
+    rg_players: state.players,
+    rg_playerMeta: state.playerMeta
+  }).catch(err => console.error('Erreur sauvegarde Firestore:', err));
 }
 
 export function ensurePlayerMeta() {
@@ -71,5 +126,3 @@ export function splitDisplayName(fullName) {
     firstName: parts.slice(1).join(' ')
   };
 }
-
-ensurePlayerMeta();

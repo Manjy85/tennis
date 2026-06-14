@@ -70,8 +70,13 @@ export function toggleRound(roundIndex, contextPlayer = null) {
 }
 
 export function newPlayer() {
+  if (!state.currentTournamentId) {
+    document.getElementById('content').innerHTML = `<p style="color:#888;">Aucun tournoi actif. Demande à l'admin d'en créer un.</p>`;
+    return;
+  }
   document.getElementById('content').innerHTML = `
     <h2>Nouveau joueur</h2>
+    <p style="color:#666; margin-bottom:12px;">Tu rejoins : <strong>${state.tournamentName}</strong></p>
     <input id="playerName" placeholder="Ton pseudo" />
     <button class="green" onclick="createPlayer()">Creer mon bracket</button>
   `;

@@ -1,15 +1,138 @@
 import { state, uiState, save, ensurePlayerMeta, getPlayerMetaParts, splitDisplayName } from './state.js';
 import { getBracketMinHeight, updateMatchDimensions } from './bracket.js';
 
-export function adminSelect(roundIndex, matchIndex, winner) {
-  state.officialResults[`round${roundIndex}`][matchIndex] = winner;
-  save();
-  showAdmin();
+// ── Tab navigation ─────────────────────────────────────────────────────────
+
+export function showAdminPanel(tab = 'tournois') {
+  const tabs = [
+    { id: 'tournois', label: '🏆 Tournois' },
+    { id: 'config', label: '⚙️ Configuration' },
+    { id: 'resultats', label: '🛠️ Résultats officiels' }
+  ];
+
+  let html = `<h2>Administration</h2>
+    <div style="display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap;">`;
+  tabs.forEach(t => {
+    const active = tab === t.id ? 'blue' : '';
+    html += `<button class="${active}" onclick="showAdminPanel('${t.id}')">${t.label}</button>`;
+  });
+  html += `</div>`;
+
+  if (tab === 'tournois') html += buildTournoisHTML();
+  else if (tab === 'config') html += buildConfigHTML();
+  else if (tab === 'resultats') html += buildResultatsHTML();
+
+  document.getElementById('content').innerHTML = html;
+
+  if (tab === 'resultats') updateMatchDimensions(() => showAdminPanel('resultats'));
 }
 
-export function showAdmin() {
-  let html = `<h2>🛠️ ADMIN - Vrais Resultats</h2>
-              <p style="color:#b71c1c; font-weight:bold;">Ce que tu cliques ici devient le resultat officiel.</p>`;
+export function showAdmin() { showAdminPanel('resultats'); }
+export function showAdminConfig() { showAdminPanel('config'); }
+
+// ── Onglet Tournois ────────────────────────────────────────────────────────
+
+function buildTournoisHTML() {
+  let html = `<div class="admin-box">
+    <h3>Créer un nouveau tournoi</h3>
+    <input id="newTournamentName" placeholder="Nom du tournoi (ex: Roland-Garros 2026)" style="width:320px; margin-right:10px;" />
+    <button class="green" onclick="adminCreateTournament()">Créer</button>
+  </div>`;
+
+  html += `<div class="admin-box"><h3>Tournois existants</h3>`;
+  if (state.tournamentList.length === 0) {
+    html += `<p style="color:#888;">Aucun tournoi. Créez-en un ci-dessus.</p>`;
+  } else {
+    html += `<table><tr><th>Nom</th><th>Participants</th><th>Statut</th><th>Actions</th></tr>`;
+    state.tournamentList.forEach(t => {
+      const isActive = t.id === state.currentTournamentId;
+      const participants = isActive ? state.players.length : '—';
+      html += `<tr>
+        <td><strong>${t.name}</strong></td>
+        <td>${participants}</td>
+        <td>${isActive ? '<span style="color:#0c6b2f; font-weight:bold;">🟢 Actif</span>' : ''}</td>
+        <td style="display:flex; gap:6px;">
+          ${!isActive ? `<button onclick="adminActivateTournament('${t.id}')">Activer</button>` : ''}
+          <button class="red" onclick="adminDeleteTournament('${t.id}')">Supprimer</button>
+        </td>
+      </tr>`;
+    });
+    html += `</table>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+// ── Onglet Configuration ───────────────────────────────────────────────────
+
+function buildConfigHTML() {
+  if (!state.currentTournamentId) {
+    return `<p style="color:#888;">Aucun tournoi actif. Créez-en un dans l'onglet Tournois.</p>`;
+  }
+
+  let html = `<p style="color:#666; margin-bottom:16px;">Tournoi : <strong>${state.tournamentName}</strong></p>`;
+
+  html += `<div class="admin-box">
+    <h3>1. Nom du tournoi</h3>
+    <input id="tournamentNameInput" value="${state.tournamentName}" style="width:320px; margin-right:10px;" />
+    <button class="blue" onclick="adminSaveTournamentName()">Renommer</button>
+  </div>`;
+
+  html += `<div class="admin-box">
+    <h3>2. Taille du Tableau</h3>
+    <select id="bracketSizeInput" style="margin-right:10px;">
+      <option value="8" ${state.initialPlayers.length === 8 ? 'selected' : ''}>8 Joueurs (Quarts)</option>
+      <option value="16" ${state.initialPlayers.length === 16 ? 'selected' : ''}>16 Joueurs (Huitiemes)</option>
+      <option value="32" ${state.initialPlayers.length === 32 ? 'selected' : ''}>32 Joueurs (Seiziemes)</option>
+      <option value="64" ${state.initialPlayers.length === 64 ? 'selected' : ''}>64 Joueurs (2e Tour)</option>
+      <option value="128" ${state.initialPlayers.length === 128 ? 'selected' : ''}>128 Joueurs (Roland-Garros)</option>
+    </select>
+    <button class="red" onclick="changeBracketSize()">Générer le nouveau tableau</button>
+  </div>`;
+
+  html += `<div class="admin-box">
+    <h3>3. Bareme de points</h3>
+    <table><tr>`;
+  state.rounds.forEach(r => { html += `<th>${r.name}</th>`; });
+  html += `</tr><tr>`;
+  state.rounds.forEach((r, i) => { html += `<td><input type="number" id="pts_r${i}" value="${r.points}" style="width:60px;" /> pts</td>`; });
+  html += `</tr></table>
+    <button class="blue" onclick="savePoints()">Sauvegarder les points</button>
+  </div>`;
+
+  html += `<div class="admin-box">
+    <h3>4. Joueurs du tableau (${state.initialPlayers.length} joueurs)</h3>
+    <textarea id="playersListInput" style="width:100%; height:300px;" onblur="savePlayersList(true)">${state.initialPlayers.join('\n')}</textarea><br><br>
+    <button class="green" onclick="savePlayersList()">Mettre à jour les noms</button>
+  </div>`;
+
+  html += `<div class="admin-box">
+    <h3>5. Têtes de série et nationalités</h3>
+    <table>
+      <tr><th>Joueur</th><th>Tête</th><th>Nat (3 lettres)</th></tr>`;
+  state.initialPlayers.forEach((name, index) => {
+    const meta = state.playerMeta[name] || {};
+    html += `<tr>
+      <td><strong>${name || '(vide)'}</strong></td>
+      <td><input type="text" id="seed_${index}" value="${meta.seed || ''}" style="width:80px;" oninput="updatePlayerMetaField(${index}, 'seed', this.value)" /></td>
+      <td><input type="text" id="nat_${index}" value="${meta.nat || ''}" maxlength="3" style="width:80px; text-transform:uppercase;" oninput="updatePlayerMetaField(${index}, 'nat', this.value)" /></td>
+    </tr>`;
+  });
+  html += `</table>
+    <button class="blue" onclick="savePlayerMeta()">Sauvegarder</button>
+  </div>`;
+
+  return html;
+}
+
+// ── Onglet Résultats officiels ─────────────────────────────────────────────
+
+function buildResultatsHTML() {
+  if (!state.currentTournamentId) {
+    return `<p style="color:#888;">Aucun tournoi actif. Créez-en un dans l'onglet Tournois.</p>`;
+  }
+
+  let html = `<p style="color:#b71c1c; font-weight:bold; margin-bottom:16px;">Ce que tu cliques ici devient le résultat officiel.</p>`;
 
   const minHeight = getBracketMinHeight();
   const matchBoxHeight = uiState.measuredMatchHeight;
@@ -33,12 +156,10 @@ export function showAdmin() {
     const roundWidth = uiState.measuredRoundWidths[roundIndex] || 220;
     html += `<div class="round ${isCollapsed ? 'collapsed' : ''}" style="--match-width:${roundWidth}px;">
                <div class="vertical-title" onclick="toggleRound(${roundIndex}, 'ADMIN')">${round.name}</div>
-
                <div class="round-header">
                  <h2>${round.name}</h2>
                  <button class="toggle-btn" onclick="toggleRound(${roundIndex}, 'ADMIN')">👁️ Masquer</button>
                </div>
-
                <div class="match-container" style="--round-gap:${roundGap}px; --round-offset:${roundOffset}px;">`;
 
     for (let i = 0; i < round.matches; i++) {
@@ -70,58 +191,15 @@ export function showAdmin() {
     html += `</div></div>`;
   });
   html += `</div>`;
-  document.getElementById('content').innerHTML = html;
-  updateMatchDimensions(showAdmin);
+  return html;
 }
 
-export function showAdminConfig() {
-  let html = `<h2>⚙️ ADMIN - Configuration du Tournoi</h2>`;
+// ── Actions ────────────────────────────────────────────────────────────────
 
-  html += `<div class="admin-box">
-             <h3>1. Taille du Tableau</h3>
-             <select id="bracketSizeInput" style="margin-right:10px;">
-               <option value="8" ${state.initialPlayers.length === 8 ? 'selected' : ''}>8 Joueurs (Quarts)</option>
-               <option value="16" ${state.initialPlayers.length === 16 ? 'selected' : ''}>16 Joueurs (Huitiemes)</option>
-               <option value="32" ${state.initialPlayers.length === 32 ? 'selected' : ''}>32 Joueurs (Seiziemes)</option>
-               <option value="64" ${state.initialPlayers.length === 64 ? 'selected' : ''}>64 Joueurs (2e Tour)</option>
-               <option value="128" ${state.initialPlayers.length === 128 ? 'selected' : ''}>128 Joueurs (Roland-Garros)</option>
-             </select>
-             <button class="red" onclick="changeBracketSize()">Generer le nouveau tableau</button>
-           </div>`;
-
-  html += `<div class="admin-box">
-             <h3>2. Bareme de points</h3>
-             <table><tr>`;
-  state.rounds.forEach(r => { html += `<th>${r.name}</th>`; });
-  html += `</tr><tr>`;
-  state.rounds.forEach((r, i) => { html += `<td><input type="number" id="pts_r${i}" value="${r.points}" style="width:60px;" /> pts</td>`; });
-  html += `</tr></table>
-           <button class="blue" onclick="savePoints()">Sauvegarder les points</button>
-           </div>`;
-
-  html += `<div class="admin-box">
-             <h3>3. Renseigner les ${state.initialPlayers.length} Joueurs</h3>
-             <textarea id="playersListInput" style="width:100%; height:300px;" onblur="savePlayersList(true)">${state.initialPlayers.join('\n')}</textarea><br><br>
-             <button class="green" onclick="savePlayersList()">Mettre a jour les noms</button>
-           </div>`;
-
-  html += `<div class="admin-box">
-             <h3>4. Tetes de serie et nationalites</h3>
-             <table>
-               <tr><th>Joueur</th><th>Tete</th><th>Nat (3 lettres)</th></tr>`;
-  state.initialPlayers.forEach((name, index) => {
-    const meta = state.playerMeta[name] || {};
-    html += `<tr>
-               <td><strong>${name || '(vide)'}</strong></td>
-               <td><input type="text" id="seed_${index}" value="${meta.seed || ''}" style="width:80px;" oninput="updatePlayerMetaField(${index}, 'seed', this.value)" /></td>
-               <td><input type="text" id="nat_${index}" value="${meta.nat || ''}" maxlength="3" style="width:80px; text-transform:uppercase;" oninput="updatePlayerMetaField(${index}, 'nat', this.value)" /></td>
-             </tr>`;
-  });
-  html += `</table>
-           <button class="blue" onclick="savePlayerMeta()">Sauvegarder</button>
-           </div>`;
-
-  document.getElementById('content').innerHTML = html;
+export function adminSelect(roundIndex, matchIndex, winner) {
+  state.officialResults[`round${roundIndex}`][matchIndex] = winner;
+  save();
+  showAdminPanel('resultats');
 }
 
 export function changeBracketSize() {
@@ -130,7 +208,6 @@ export function changeBracketSize() {
 
   const numRounds = Math.log2(size);
   const nextRounds = [];
-
   for (let i = 0; i < numRounds; i++) {
     const matches = size / Math.pow(2, i + 1);
     const rName = matches === 1 ? 'Finale'
@@ -155,7 +232,7 @@ export function changeBracketSize() {
   });
 
   save();
-  showAdminConfig();
+  showAdminPanel('config');
 }
 
 export function savePoints() {
@@ -190,7 +267,7 @@ export function savePlayersList(silent = false) {
 
   save();
   if (!silent) alert('Liste des joueurs enregistree !');
-  if (silent) showAdminConfig();
+  if (silent) showAdminPanel('config');
 }
 
 export function savePlayerMeta() {
@@ -199,14 +276,11 @@ export function savePlayerMeta() {
     if (!name) return;
     const seedValue = document.getElementById(`seed_${index}`).value.trim();
     const natValue = document.getElementById(`nat_${index}`).value.trim().toUpperCase();
-    nextMeta[name] = {
-      seed: seedValue,
-      nat: natValue
-    };
+    nextMeta[name] = { seed: seedValue, nat: natValue };
   });
   state.playerMeta = nextMeta;
   save();
-  showAdminConfig();
+  showAdminPanel('config');
 }
 
 export function updatePlayerMetaField(index, field, value) {
@@ -217,4 +291,14 @@ export function updatePlayerMetaField(index, field, value) {
   if (field === 'nat') meta.nat = value.trim().toUpperCase();
   state.playerMeta[name] = meta;
   save();
+}
+
+export function adminSaveTournamentName() {
+  const name = document.getElementById('tournamentNameInput').value.trim();
+  if (!name) return alert('Le nom ne peut pas etre vide.');
+  state.tournamentName = name;
+  const t = state.tournamentList.find(t => t.id === state.currentTournamentId);
+  if (t) t.name = name;
+  save();
+  alert('Nom du tournoi mis a jour !');
 }

@@ -92,11 +92,28 @@ export function calculateAccuracyByRound(player) {
   });
 }
 
+function buildTournamentSelector(view) {
+  if (state.tournamentList.length <= 1) {
+    return state.currentTournamentId
+      ? `<p style="color:#666; margin-bottom:16px;">Tournoi : <strong>${state.tournamentName}</strong></p>`
+      : '';
+  }
+  let html = `<div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+    <span style="font-weight:bold; color:#444;">Tournoi :</span>
+    <select style="padding:6px 10px; border-radius:8px; border:1px solid #ccc;" onchange="switchTournamentView(this.value, '${view}')">`;
+  state.tournamentList.forEach(t => {
+    html += `<option value="${t.id}" ${t.id === state.currentTournamentId ? 'selected' : ''}>${t.name}</option>`;
+  });
+  html += `</select></div>`;
+  return html;
+}
+
 export function showRanking() {
   state.players.forEach(p => p.score = calculateScore(p));
   const sorted = [...state.players].sort((a, b) => b.score - a.score);
 
-  let html = `<h2>Classement general</h2>
+  let html = buildTournamentSelector('ranking');
+  html += `<h2>Classement — ${state.tournamentName || 'Tournoi'}</h2>
     <table><tr><th>#</th><th>Joueur</th><th>Statut</th>`;
   state.rounds.forEach((round, roundIndex) => {
     html += `<th title="${round.name}">R${roundIndex + 1}</th>`;
@@ -126,7 +143,8 @@ export function showDashboard() {
   state.players.forEach(p => p.score = calculateScore(p));
   const sorted = [...state.players].sort((a, b) => b.score - a.score);
 
-  let html = `<h2>Tableaux des participants</h2><div class="dashboard">`;
+  let html = buildTournamentSelector('dashboard');
+  html += `<h2>Tableaux des participants — ${state.tournamentName || 'Tournoi'}</h2><div class="dashboard">`;
   sorted.forEach((player, index) => {
     html += `<div class="player-card" onclick="showBracket('${player.name}')">
                <div class="lock-badge">${player.locked ? '🔒' : '✏️'}</div>

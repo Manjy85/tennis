@@ -17,15 +17,8 @@
     <button class="green" onclick="showDashboard()">Accueil</button>
     <button class="green" onclick="newPlayer()">+ Nouveau joueur</button>
     <button class="black" onclick="showRanking()">Classement</button>
-    <button class="red" onclick="showAdmin()">Admin (Matchs)</button>
-    <button class="blue" onclick="showAdminConfig()">Admin (Config)</button>
-    <button class="orange" onclick="resetTournament()">Reset Tournoi</button>
-    <button class="black" onclick="exportData()">Exporter JSON</button>
-    <button class="black" onclick="triggerImport()">Importer JSON</button>
-    <button onclick="resetData()" style="background:#e0e0e0; color:#333;">Hard Reset (Tout)</button>
+    <button class="red" onclick="showAdminPanel()">Admin</button>
   </div>
-
-  <input id="importFile" type="file" accept="application/json" style="display:none" onchange="importData(event)" />
 
   <div id="content"></div>
 </div>
