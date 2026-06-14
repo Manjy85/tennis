@@ -1,0 +1,336 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+}
+
+header {
+  background: #0c6b2f;
+  color: white;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+header h1 { margin: 0; font-size: 1.3rem; }
+
+.header-admin-link {
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 6px 12px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.header-admin-link:hover { background: rgba(255,255,255,0.15); color: white; }
+
+.container { padding: 0 20px 30px; }
+
+/* ── Niveau 1 : Onglets tournois ────────────────────────────────────────── */
+
+.tournament-tabs {
+  display: flex;
+  gap: 0;
+  background: white;
+  border-bottom: 2px solid #e0e0e0;
+  padding: 0 20px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+
+.tournament-tab {
+  background: none;
+  border: none;
+  color: #666;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: all 0.2s;
+  border-radius: 0;
+}
+
+.tournament-tab:hover  { color: #0c6b2f; background: #f9f9f9; }
+.tournament-tab.active { color: #0c6b2f; border-bottom-color: #0c6b2f; }
+
+.tournament-tab-empty {
+  padding: 12px 4px;
+  color: #999;
+  font-size: 14px;
+}
+.tournament-tab-empty a { color: #0c6b2f; }
+
+/* ── Niveau 2 : Onglets mode ────────────────────────────────────────────── */
+
+.mode-tabs {
+  display: flex;
+  gap: 0;
+  background: #1a1a2e;
+  padding: 0 20px;
+}
+
+.mode-tab {
+  background: none;
+  border: none;
+  color: #888;
+  padding: 11px 20px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  border-radius: 0;
+}
+
+.mode-tab:hover  { color: #ccc; background: rgba(255,255,255,0.05); }
+.mode-tab.active { color: white; border-bottom-color: #4caf50; }
+
+/* ── Sous-menu ───────────────────────────────────────────────────────────── */
+
+.menu {
+  display: flex;
+  gap: 10px;
+  padding: 16px 0;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── Boutons ─────────────────────────────────────────────────────────────── */
+
+button {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+button:hover    { opacity: 0.85; }
+button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.green  { background: #0c6b2f; color: white; }
+.red    { background: #b71c1c; color: white; }
+.black  { background: #111;    color: white; }
+.blue   { background: #0277bd; color: white; }
+.orange { background: #f57c00; color: white; }
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+th, td { padding: 14px; border-bottom: 1px solid #eee; text-align: left; }
+th     { background: #0c6b2f; color: white; }
+
+input, textarea, select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.player-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.09);
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s;
+}
+
+.player-card:hover { transform: translateY(-2px); }
+.player-card h3    { margin: 0 0 8px; color: #0c6b2f; }
+.player-card-score { font-size: 26px; font-weight: bold; color: #111; margin: 8px 0; }
+.lock-badge        { position: absolute; top: 14px; right: 14px; font-size: 20px; }
+
+.badge-pending { display:inline-block; margin-top:10px; padding:4px 10px; background:#fff3e0; color:#f57c00; border-radius:20px; font-size:12px; font-weight:bold; }
+.badge-done    { display:inline-block; margin-top:10px; padding:4px 10px; background:#e8f5e9; color:#0c6b2f; border-radius:20px; font-size:12px; font-weight:bold; }
+
+/* ── Bracket Prono Tableau ───────────────────────────────────────────────── */
+
+.bracket {
+  display: flex;
+  gap: 30px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+  align-items: stretch;
+  margin-top: 20px;
+}
+
+.round {
+  min-width: var(--match-width, 220px);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.round-header {
+  background: #e0e0e0;
+  color: #333;
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.round-header h2  { margin: 0; font-size: 15px; }
+.round-header small { font-size: 12px; color: #666; }
+
+.toggle-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  font-size: 12px;
+  color: #0c6b2f;
+  text-decoration: underline;
+  margin-top: 4px;
+}
+
+.match-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--round-gap, 16px);
+  padding-top: var(--round-offset, 0px);
+}
+
+.match {
+  background: white;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+  height: var(--match-height, 70px);
+  width: var(--match-width, 220px);
+  overflow: hidden;
+}
+
+.bracket.auto-height .match { height: auto; }
+.bracket.auto-size .match,
+.bracket.auto-size .player-btn,
+.bracket.auto-size .player-label { width: max-content; }
+
+.match.empty { justify-content: center; align-items: center; }
+
+.player-btn {
+  display: block;
+  width: 100%;
+  background: #ececec;
+  color: black;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.player-label { display: flex; align-items: center; gap: 6px; }
+.player-seed  { width: 20px; text-align: right; font-weight: bold; color: #333; flex: 0 0 20px; }
+.player-name  { flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.player-nat   { width: 30px; text-align: right; color: #555; font-weight: bold; flex: 0 0 30px; }
+.player-btn:disabled { opacity: 1; }
+
+.selected  { background: #444; color: white; }
+.correct   { background: #0c6b2f; color: white; }
+.incorrect { background: #b71c1c; color: white; }
+
+.round.collapsed { min-width: 40px; background: #e0e0e0; border-radius: 10px; cursor: pointer; }
+.round.collapsed .round-header,
+.round.collapsed .match-container { display: none; }
+
+.vertical-title { display: none; writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-weight: bold; color: #555; height: 100%; padding: 20px 0; letter-spacing: 2px; }
+.round.collapsed .vertical-title { display: flex; align-items: center; justify-content: center; }
+
+/* ── Bracket Prono Match ────────────────────────────────────────────────── */
+
+.bracket-view {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding: 8px 4px 24px;
+  align-items: flex-start;
+}
+
+.bracket-col { min-width: 230px; flex-shrink: 0; }
+
+.bracket-col-header {
+  background: #0c6b2f;
+  color: white;
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+.bracket-col-header small { opacity: 0.8; font-size: 12px; }
+.bracket-col-matches      { display: flex; flex-direction: column; gap: 12px; }
+
+.bracket-match-card {
+  background: white;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  border-left: 4px solid #ccc;
+}
+
+.bracket-match-card.pending   { border-left-color: #f57c00; background: #fffbf7; }
+.bracket-match-card.done      { border-left-color: #0277bd; }
+.bracket-match-card.locked    { border-left-color: #555; background: #fafafa; }
+.bracket-match-card.correct   { border-left-color: #0c6b2f; }
+.bracket-match-card.partial   { border-left-color: #f9a825; }
+.bracket-match-card.incorrect { border-left-color: #b71c1c; }
+
+.match-players { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.match-player  { font-size: 13px; font-weight: bold; color: #333; }
+.match-player-picked { color: #0c6b2f; }
+.match-vs      { color: #bbb; font-size: 11px; }
+.match-result  { font-size: 12px; color: #0c6b2f; background: #e8f5e9; padding: 5px 8px; border-radius: 6px; margin-bottom: 8px; }
+.pred-locked   { font-size: 13px; color: #555; padding: 6px 8px; background: #f5f5f5; border-radius: 6px; margin-top: 6px; }
+.status-icon   { margin-top: 8px; font-size: 13px; font-weight: bold; }
+
+.pick-winner { display: flex; gap: 6px; margin-bottom: 8px; }
+.pick-btn { flex: 1; padding: 8px 6px; background: #ececec; color: #333; border-radius: 8px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pick-btn.selected { background: #0c6b2f; color: white; }
+
+.pick-score       { margin-bottom: 8px; }
+.pick-score-label { font-size: 11px; color: #888; display: block; margin-bottom: 4px; }
+
+.score-btn { margin: 2px 4px 2px 0; padding: 6px 12px; background: #ececec; color: #333; border-radius: 8px; font-size: 13px; font-weight: bold; }
+.score-btn.selected { background: #0277bd; color: white; }
+
+.lock-match-btn {
+  width: 100%; margin-top: 6px; padding: 8px; background: #f5f5f5; color: #555;
+  border-radius: 8px; font-size: 12px; border: 1px dashed #bbb;
+}
+.lock-match-btn:hover { background: #111; color: white; border-color: #111; }

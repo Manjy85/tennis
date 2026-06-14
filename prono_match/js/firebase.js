@@ -13,29 +13,31 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export async function loadAppConfig() {
+// Partage la même collection que prono_tableau
+export async function loadPmConfig() {
   const snap = await getDoc(doc(db, 'app', 'config'));
   return snap.exists() ? snap.data() : {};
 }
 
-export function saveAppConfig(data) {
-  return setDoc(doc(db, 'app', 'config'), data);
+export function savePmConfig(data) {
+  return setDoc(doc(db, 'app', 'config'), data, { merge: true });
 }
 
-export async function loadAllTournaments() {
+export async function loadAllPmTournaments() {
   const snap = await getDocs(collection(db, 'tournaments'));
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-export async function loadTournament(id) {
+export async function loadPmTournament(id) {
   const snap = await getDoc(doc(db, 'tournaments', id));
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
-export function saveTournament(id, data) {
+export function savePmTournament(id, data) {
+  // merge:true pour ne pas écraser les données prono_tableau (rg_*)
   return setDoc(doc(db, 'tournaments', id), data, { merge: true });
 }
 
-export function deleteTournament(id) {
+export function deletePmTournament(id) {
   return deleteDoc(doc(db, 'tournaments', id));
 }

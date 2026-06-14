@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administration — Tennis Pronostics</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="admin-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="../" class="back-link">← Retour au jeu</a>
+      <h1>⚙️ Admin</h1>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Général</div>
+      <button onclick="showTab('tournois')"   id="tab-tournois">🏆 Tournois</button>
+      <button onclick="showTab('config')"     id="tab-config">⚙️ Configuration</button>
+
+      <div class="nav-section-label">Prono Tableau</div>
+      <button onclick="showTab('joueurs')"    id="tab-joueurs">👥 Joueurs & Têtes</button>
+      <button onclick="showTab('res-tableau')" id="tab-res-tableau">🛠️ Résultats</button>
+
+      <div class="nav-section-label">Prono Match</div>
+      <button onclick="showTab('matchs')"     id="tab-matchs">🎾 Matchs</button>
+      <button onclick="showTab('res-matchs')" id="tab-res-matchs">🛠️ Résultats</button>
+    </nav>
+
+    <div class="sidebar-tournament">
+      <div class="sidebar-tournament-label">Tournoi actif</div>
+      <div class="sidebar-tournament-name" id="tournamentLabel">—</div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="admin-main">
+    <div id="content">
+      <p style="color:#888; text-align:center; padding:60px;">Chargement...</p>
+    </div>
+  </main>
+
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

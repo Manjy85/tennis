@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎾 Tennis Pronostics</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- Barre de titre -->
+<header>
+  <h1>🎾 Tennis Pronostics</h1>
+  <a href="admin/" class="header-admin-link">⚙️ Admin</a>
+</header>
+
+<!-- Niveau 1 : Onglets tournois -->
+<div class="tournament-tabs" id="tournament-tabs">
+  <!-- populé dynamiquement -->
+</div>
+
+<!-- Niveau 2 : Onglets mode -->
+<div class="mode-tabs" id="mode-tabs">
+  <button id="mode-tab-tableau" class="mode-tab active" onclick="switchMode('tableau')">🏆 Prono Tableau</button>
+  <button id="mode-tab-match"   class="mode-tab"        onclick="switchMode('match')">🎾 Prono Match</button>
+</div>
+
+<!-- Sous-menu contextuel -->
+<div class="container">
+  <div class="menu" id="submenu"></div>
+  <div id="content"></div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
