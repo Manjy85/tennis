@@ -1,39 +1,42 @@
-import { state, loadState, switchTournament, createTournament, saveTableau, savePmMatch, ensurePlayerMeta } from './state.js';
+import { state, loadState, switchTournament, createTournament, saveTableau, savePmMatch, ensurePlayerMeta, syncMatchesFromBracket } from './state.js';
 import { deleteTournament } from './firebase.js';
 
 // ── Tab routing ────────────────────────────────────────────────────────────
 
 let currentTab = 'tournois';
 
+// Vainqueur pressenti en attente d'un score, dans la vue Résultats.
+// Forme : { key: `${roundIndex}_${matchIndex}`, side: 'player1'|'player2' } | null
+let pendingPick = null;
+
 export function showTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById(`tab-${tab}`);
+  const btn = document.getElementById('tab-tournois');
   if (btn) btn.classList.add('active');
   const builders = {
-    'tournois':    buildTournois,
-    'config':      buildConfig,
-    'joueurs':     buildJoueurs,
-    'res-tableau': buildResTableau,
-    'matchs':      buildMatchs,
-    'res-matchs':  buildResMatchs,
+    'tournois':  buildTournois,
+    'config':    buildConfig,
+    'joueurs':   buildJoueurs,
+    'resultats': buildResultats,
   };
-  document.getElementById('content').innerHTML = (builders[tab] || (() => ''))();
+  document.getElementById('content').innerHTML = (builders[tab] || buildTournois)();
 }
 
-function requireTournament() {
+function requireTournament(title) {
   if (!state.currentTournamentId) {
-    return `<p style="color:#888; margin-top:32px;">Aucun tournoi actif. Créez-en un dans <strong>🏆 Tournois</strong>.</p>`;
+    return `<h2 class="page-title">${title}</h2>
+      <p style="color:#888; margin-top:32px;">Aucun tournoi sélectionné. Revenez aux <strong>🏆 Tournois</strong>.</p>`;
   }
   return null;
 }
 
-function updateSidebarTournament() {
-  const el = document.getElementById('tournamentLabel');
-  if (el) el.textContent = state.tournamentName || '—';
+function backLink() {
+  return `<a href="#" class="back-link" style="display:inline-block; margin-bottom:16px;"
+    onclick="event.preventDefault(); showTab('tournois');">← Retour aux tournois</a>`;
 }
 
-// ── Tournois ───────────────────────────────────────────────────────────────
+// ── Tournois (hub) ───────────────────────────────────────────────────────────
 
 function buildTournois() {
   let html = `<h2 class="page-title">🏆 Tournois</h2>`;
@@ -50,17 +53,20 @@ function buildTournois() {
   if (state.tournamentList.length === 0) {
     html += `<p style="color:#888;">Aucun tournoi. Créez-en un ci-dessus.</p>`;
   } else {
-    html += `<table><thead><tr><th>Nom</th><th>Joueurs tableau</th><th>Matchs</th><th>Statut</th><th>Actions</th></tr></thead><tbody>`;
+    html += `<table><thead><tr><th>Nom</th><th>Joueurs tableau</th><th>Pronos tableau</th><th>Matchs</th><th>Actions</th></tr></thead><tbody>`;
     state.tournamentList.forEach(t => {
-      const isActive = t.id === state.currentTournamentId;
+      const nameEsc = t.id.replace(/'/g, "\\'");
       html += `<tr>
-        <td><strong>${t.name}</strong></td>
-        <td>${isActive ? state.initialPlayers.length : '—'}</td>
-        <td>${isActive ? state.matches.length : '—'}</td>
-        <td>${isActive ? '<span class="badge badge-active">🟢 Actif</span>' : ''}</td>
-        <td style="display:flex; gap:6px;">
-          ${!isActive ? `<button class="btn-blue" onclick="adminActivateTournament('${t.id}')">Activer</button>` : ''}
-          <button class="btn-red" onclick="adminDeleteTournament('${t.id}')">Supprimer</button>
+        <td><a href="#" style="font-weight:bold; color:#0c6b2f; text-decoration:none;"
+          onclick="event.preventDefault(); openTournament('${nameEsc}', 'resultats');">${t.name}</a></td>
+        <td>${t.playersCount ?? '—'}</td>
+        <td>${t.bracketsCount ?? '—'}</td>
+        <td>${t.matchsCount ?? '—'}</td>
+        <td style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="btn-blue"  onclick="openTournament('${nameEsc}', 'config')">⚙️ Configurer</button>
+          <button class="btn-blue"  onclick="openTournament('${nameEsc}', 'joueurs')">👥 Joueurs & Têtes</button>
+          <button class="btn-green" onclick="openTournament('${nameEsc}', 'resultats')">🛠️ Résultats</button>
+          <button class="btn-red"   onclick="adminDeleteTournament('${nameEsc}')">🗑️ Supprimer</button>
         </td>
       </tr>`;
     });
@@ -73,10 +79,11 @@ function buildTournois() {
 // ── Configuration ──────────────────────────────────────────────────────────
 
 function buildConfig() {
-  const err = requireTournament();
-  if (err) return `<h2 class="page-title">⚙️ Configuration</h2>${err}`;
+  const err = requireTournament('⚙️ Configuration');
+  if (err) return err;
 
-  let html = `<h2 class="page-title">⚙️ Configuration — ${state.tournamentName}</h2>`;
+  let html = backLink();
+  html += `<h2 class="page-title">⚙️ Configuration — ${state.tournamentName}</h2>`;
 
   html += `<div class="box">
     <h3>Nom du tournoi</h3>
@@ -130,10 +137,11 @@ function buildConfig() {
 // ── Joueurs & Têtes de série ───────────────────────────────────────────────
 
 function buildJoueurs() {
-  const err = requireTournament();
-  if (err) return `<h2 class="page-title">👥 Joueurs & Têtes de série</h2>${err}`;
+  const err = requireTournament('👥 Joueurs & Têtes de série');
+  if (err) return err;
 
-  let html = `<h2 class="page-title">👥 Joueurs & Têtes de série — ${state.tournamentName}</h2>`;
+  let html = backLink();
+  html += `<h2 class="page-title">👥 Joueurs & Têtes de série — ${state.tournamentName}</h2>`;
 
   html += `<div class="box">
     <h3>Liste des joueurs (${state.initialPlayers.length} joueurs)</h3>
@@ -181,112 +189,6 @@ function buildJoueurs() {
     <br><button class="btn-blue" onclick="adminSaveMeta()">Sauvegarder têtes & nats</button>
   </div>`;
 
-  return html;
-}
-
-// ── Résultats Tableau ──────────────────────────────────────────────────────
-
-function buildResTableau() {
-  const err = requireTournament();
-  if (err) return `<h2 class="page-title">🛠️ Résultats Tableau</h2>${err}`;
-
-  let html = `<h2 class="page-title">🛠️ Résultats Tableau — ${state.tournamentName}</h2>`;
-  html += `<p style="color:#888; font-size:13px; margin-bottom:20px;">Cliquez sur un joueur pour le définir comme vainqueur du match.</p>`;
-  html += `<div class="results-bracket">`;
-
-  state.rounds.forEach((round, roundIndex) => {
-    const roundPlayers = roundIndex === 0
-      ? state.initialPlayers
-      : (state.officialResults[`round${roundIndex - 1}`] || []);
-
-    html += `<div class="results-round">
-      <div class="results-round-header">${round.name}</div>`;
-
-    for (let i = 0; i < round.matches; i++) {
-      const p1 = roundPlayers[i * 2];
-      const p2 = roundPlayers[i * 2 + 1];
-      const winner = (state.officialResults[`round${roundIndex}`] || [])[i];
-
-      html += `<div class="results-match">`;
-      if (!p1 && !p2) {
-        html += `<div class="results-player-btn waiting">En attente...</div>
-                 <div class="results-player-btn waiting">En attente...</div>`;
-      } else {
-        [p1, p2].forEach(p => {
-          if (!p) {
-            html += `<div class="results-player-btn waiting">—</div>`;
-          } else {
-            const isWinner = winner === p;
-            html += `<button class="results-player-btn ${isWinner ? 'winner' : ''}"
-              onclick="adminSelectWinner(${roundIndex}, ${i}, '${p.replace(/'/g, "\\'")}')">
-              ${p}
-            </button>`;
-          }
-        });
-      }
-      html += `</div>`;
-    }
-    html += `</div>`;
-  });
-
-  html += `</div>`;
-  return html;
-}
-
-// ── Matchs (Prono Match) ───────────────────────────────────────────────────
-
-function buildMatchs() {
-  const err = requireTournament();
-  if (err) return `<h2 class="page-title">🎾 Matchs</h2>${err}`;
-
-  const hasBracket = state.initialPlayers.length > 0 && state.rounds.length > 0;
-  let html = `<h2 class="page-title">🎾 Matchs — ${state.tournamentName}</h2>`;
-
-  if (hasBracket) {
-    html += `<div class="box box-green">
-      <h3>Import depuis le tableau Prono Tableau</h3>
-      <p style="font-size:14px; color:#555; margin-top:0;">
-        Tableau de <strong>${state.initialPlayers.length} joueurs</strong> configuré.
-        Générez automatiquement les matchs à partir des joueurs et des résultats disponibles.
-      </p>
-      <button class="btn-green" onclick="adminSyncFromBracket()">⬇️ Générer les matchs depuis le tableau</button>
-    </div>`;
-  }
-
-  html += `<div class="box">
-    <h3>Ajouter un match manuellement</h3>
-    <div class="form-row">
-      <input id="matchRound"   type="text" placeholder="Round (ex: 1/4 de finale)" style="width:200px;" />
-      <input id="matchPlayer1" type="text" placeholder="Joueur 1" style="width:150px;" />
-      <span style="font-weight:bold; color:#888;">vs</span>
-      <input id="matchPlayer2" type="text" placeholder="Joueur 2" style="width:150px;" />
-      <button class="btn-green" onclick="adminAddMatch()">Ajouter</button>
-    </div>
-  </div>`;
-
-  html += `<div class="box"><h3>Matchs configurés (${state.matches.length})</h3>`;
-  if (state.matches.length === 0) {
-    html += `<p style="color:#888;">Aucun match. Utilisez l'import ou ajoutez manuellement.</p>`;
-  } else {
-    const rounds = [...new Set(state.matches.map(m => m.round))];
-    rounds.forEach(round => {
-      html += `<p style="font-weight:bold; color:#0c6b2f; margin:16px 0 6px;">${round}</p>`;
-      html += `<table><thead><tr><th>Match</th><th>Résultat</th><th></th></tr></thead><tbody>`;
-      state.matches.filter(m => m.round === round).forEach(m => {
-        const res = m.result
-          ? `${m.result.winner === 'player1' ? m.player1 : m.player2} ${m.result.score}`
-          : '<span style="color:#bbb;">—</span>';
-        html += `<tr>
-          <td>${m.player1} <span style="color:#bbb;">vs</span> ${m.player2}</td>
-          <td>${res}</td>
-          <td><button class="btn-red" style="padding:6px 12px; font-size:12px;" onclick="adminDeleteMatch('${m.id}')">Supprimer</button></td>
-        </tr>`;
-      });
-      html += `</tbody></table>`;
-    });
-  }
-  html += `</div>`;
-
   if (state.pm_players.length > 0) {
     html += `<div class="box">
       <h3>Pronostics match (${state.pm_players.length} participants)</h3>
@@ -305,54 +207,82 @@ function buildMatchs() {
   return html;
 }
 
-// ── Résultats Matchs ───────────────────────────────────────────────────────
+// ── Résultats (bracket fusionné tableau + matchs) ───────────────────────────
 
-function buildResMatchs() {
-  const err = requireTournament();
-  if (err) return `<h2 class="page-title">🛠️ Résultats Matchs</h2>${err}`;
+function buildResultats() {
+  const err = requireTournament('🛠️ Résultats');
+  if (err) return err;
 
   const scores = state.format === 'bo5' ? ['3-0', '3-1', '3-2'] : ['2-0', '2-1'];
-  const rounds = [...new Set(state.matches.map(m => m.round))];
-  let html = `<h2 class="page-title">🛠️ Résultats Matchs — ${state.tournamentName}</h2>`;
-  html += `<p style="color:#888; font-size:13px; margin-bottom:20px;">Format : ${state.format === 'bo5' ? 'Best of 5' : 'Best of 3'}</p>`;
 
-  if (state.matches.length === 0) {
-    return html + `<div class="box"><p style="color:#888;">Aucun match configuré. Allez dans <strong>🎾 Matchs</strong> pour en ajouter.</p></div>`;
-  }
+  let html = backLink();
+  html += `<h2 class="page-title">🛠️ Résultats — ${state.tournamentName}</h2>`;
+  html += `<p style="color:#888; font-size:13px; margin-bottom:20px;">
+    Choisissez le vainqueur de chaque match puis son score. Le vainqueur monte automatiquement au tour suivant.
+    Utilisez <strong>WO</strong> (forfait) ou <strong>Abandon</strong> si le match ne va pas à son terme.
+    Format : ${state.format === 'bo5' ? 'Best of 5' : 'Best of 3'}.</p>`;
+  html += `<div class="results-bracket">`;
 
-  rounds.forEach(round => {
-    html += `<div class="box">
-      <h3>${round}</h3>`;
-    state.matches.filter(m => m.round === round).forEach(match => {
-      const hasResult = !!match.result;
-      html += `<div class="match-result-row ${hasResult ? 'has-result' : ''}">
-        <div class="match-result-players">${match.player1} <span style="color:#bbb;">vs</span> ${match.player2}</div>`;
+  state.rounds.forEach((round, roundIndex) => {
+    const roundPlayers = roundIndex === 0
+      ? state.initialPlayers
+      : (state.officialResults[`round${roundIndex - 1}`] || []);
 
-      if (hasResult) {
-        const wName = match.result.winner === 'player1' ? match.player1 : match.player2;
-        html += `<div style="color:#0c6b2f; font-weight:bold; margin-bottom:8px;">✅ ${wName} ${match.result.score}</div>
-          <button class="btn-orange" style="font-size:12px; padding:6px 12px;" onclick="adminClearResult('${match.id}')">Modifier</button>`;
+    html += `<div class="results-round">
+      <div class="results-round-header">${round.name}</div>`;
+
+    for (let i = 0; i < round.matches; i++) {
+      const p1 = roundPlayers[i * 2];
+      const p2 = roundPlayers[i * 2 + 1];
+      const winnerName = (state.officialResults[`round${roundIndex}`] || [])[i];
+      const match = state.matches.find(m => m.id === `r${roundIndex}_m${i}`);
+      const result = match && match.result;
+
+      html += `<div class="results-match">`;
+
+      if (!p1 || !p2) {
+        html += `<div class="results-player-btn waiting">${p1 || 'En attente...'}</div>
+                 <div class="results-player-btn waiting">${p2 || 'En attente...'}</div>`;
+      } else if (result) {
+        // Résultat saisi → affichage + bouton Modifier
+        const wName = result.winner === 'player1' ? p1 : p2;
+        const scoreLabel = result.score === 'WO' ? 'WO' : result.score === 'AB' ? 'Abandon' : result.score;
+        [p1, p2].forEach(p => {
+          const isW = p === wName;
+          html += `<div class="results-player-btn ${isW ? 'winner' : 'loser'}">${p}</div>`;
+        });
+        html += `<div class="results-score-line">✅ ${wName} <strong>${scoreLabel}</strong>
+          <button class="btn-orange" style="font-size:11px; padding:4px 10px; margin-left:8px;"
+            onclick="adminClearBracketResult(${roundIndex}, ${i})">Modifier</button></div>`;
       } else {
-        html += `<div class="match-result-btns">
-          <span style="font-size:13px; color:#555; align-self:center;">Vainqueur :</span>
-          <button class="btn-green" style="font-size:13px; padding:8px 14px;" onclick="adminPickWinner('${match.id}', 'player1')">${match.player1}</button>
-          <button class="btn-green" style="font-size:13px; padding:8px 14px;" onclick="adminPickWinner('${match.id}', 'player2')">${match.player2}</button>
-        </div>`;
-        if (match._pendingWinner) {
-          const wName = match._pendingWinner === 'player1' ? match.player1 : match.player2;
-          html += `<div style="margin-top:10px; font-size:13px; color:#555;">Score de victoire pour <strong>${wName}</strong> :</div>
-            <div class="match-result-btns" style="margin-top:6px;">`;
+        // En attente d'une saisie
+        const key = `${roundIndex}_${i}`;
+        const pending = pendingPick && pendingPick.key === key ? pendingPick.side : null;
+        [['player1', p1], ['player2', p2]].forEach(([side, p]) => {
+          const sel = pending === side;
+          html += `<button class="results-player-btn ${sel ? 'pending' : ''}"
+            onclick="adminPickBracketWinner(${roundIndex}, ${i}, '${side}')">${p}</button>`;
+        });
+        if (pending) {
+          const wName = pending === 'player1' ? p1 : p2;
+          html += `<div class="results-score-line">
+            <span style="font-size:12px; color:#555;">${wName} gagne :</span>
+            <div class="results-score-chips">`;
           scores.forEach(s => {
-            html += `<button class="score-chip" onclick="adminSetResult('${match.id}', '${match._pendingWinner}', '${s}')">${s}</button>`;
+            html += `<button class="score-chip" onclick="adminSetBracketResult(${roundIndex}, ${i}, '${pending}', '${s}')">${s}</button>`;
           });
-          html += `</div>`;
+          html += `<button class="score-chip wo" onclick="adminSetBracketResult(${roundIndex}, ${i}, '${pending}', 'WO')">WO</button>
+            <button class="score-chip ab" onclick="adminSetBracketResult(${roundIndex}, ${i}, '${pending}', 'AB')">Abandon</button>
+          </div></div>`;
         }
       }
+
       html += `</div>`;
-    });
+    }
     html += `</div>`;
   });
 
+  html += `</div>`;
   return html;
 }
 
@@ -360,31 +290,27 @@ function buildResMatchs() {
 
 window.showTab = showTab;
 
+window.openTournament = async (id, view) => {
+  pendingPick = null;
+  if (id !== state.currentTournamentId) await switchTournament(id);
+  showTab(view);
+};
+
 window.adminCreateTournament = async () => {
   const name = document.getElementById('newTournamentName').value.trim();
   if (!name) return alert('Entrez un nom de tournoi.');
   await createTournament(name);
-  updateSidebarTournament();
-  showTab('tournois');
-};
-
-window.adminActivateTournament = async (id) => {
-  await switchTournament(id);
-  updateSidebarTournament();
   showTab('tournois');
 };
 
 window.adminDeleteTournament = async (id) => {
   const t = state.tournamentList.find(t => t.id === id);
   if (!confirm(`Supprimer "${t ? t.name : id}" ? Irréversible.`)) return;
-  const { deleteTournament } = await import('./firebase.js');
   await deleteTournament(id);
   state.tournamentList = state.tournamentList.filter(t => t.id !== id);
   if (state.currentTournamentId === id) {
     state.currentTournamentId = null;
     state.tournamentName = '';
-    if (state.tournamentList.length > 0) await switchTournament(state.tournamentList[0].id);
-    updateSidebarTournament();
   }
   showTab('tournois');
 };
@@ -393,10 +319,7 @@ window.adminSaveName = () => {
   const name = document.getElementById('tournamentNameInput').value.trim();
   if (!name) return;
   state.tournamentName = name;
-  const t = state.tournamentList.find(t => t.id === state.currentTournamentId);
-  if (t) t.name = name;
   saveTableau();
-  updateSidebarTournament();
   alert('Nom mis à jour.');
 };
 
@@ -480,37 +403,6 @@ window.adminSaveMeta = () => {
   alert('Têtes de série et nationalités sauvegardées.');
 };
 
-window.adminSelectWinner = (roundIndex, matchIndex, winner) => {
-  if (!state.officialResults[`round${roundIndex}`]) {
-    state.officialResults[`round${roundIndex}`] = Array(state.rounds[roundIndex].matches).fill(null);
-  }
-  state.officialResults[`round${roundIndex}`][matchIndex] = winner;
-  // Clear results of subsequent rounds (they may change)
-  for (let r = roundIndex + 1; r < state.rounds.length; r++) {
-    state.officialResults[`round${r}`] = Array(state.rounds[r].matches).fill(null);
-  }
-  saveTableau();
-  showTab('res-tableau');
-};
-
-window.adminAddMatch = () => {
-  const round   = document.getElementById('matchRound').value.trim();
-  const player1 = document.getElementById('matchPlayer1').value.trim();
-  const player2 = document.getElementById('matchPlayer2').value.trim();
-  if (!round || !player1 || !player2) return alert('Remplissez tous les champs.');
-  state.matches.push({ id: `m_${Date.now()}`, round, player1, player2, result: null });
-  savePmMatch();
-  showTab('matchs');
-};
-
-window.adminDeleteMatch = (id) => {
-  if (!confirm('Supprimer ce match ? Les pronostics liés seront perdus.')) return;
-  state.matches = state.matches.filter(m => m.id !== id);
-  state.pm_players.forEach(p => { if (p.predictions) delete p.predictions[id]; });
-  savePmMatch();
-  showTab('matchs');
-};
-
 window.adminDeleteTableauPlayer = (name) => {
   if (!confirm(`Supprimer le pronostic tableau de "${name}" ? Irréversible.`)) return;
   state.rg_players = state.rg_players.filter(p => p.name !== name);
@@ -522,61 +414,59 @@ window.adminDeleteMatchPlayer = (name) => {
   if (!confirm(`Supprimer les pronostics match de "${name}" ? Irréversible.`)) return;
   state.pm_players = state.pm_players.filter(p => p.name !== name);
   savePmMatch();
-  showTab('matchs');
+  showTab('joueurs');
 };
 
-window.adminSyncFromBracket = () => {
-  let added = 0;
-  state.rounds.forEach((round, roundIndex) => {
-    const roundPlayers = roundIndex === 0
-      ? state.initialPlayers
-      : (state.officialResults[`round${roundIndex - 1}`] || []);
+// ── Résultats : sélection vainqueur + score ─────────────────────────────────
 
-    for (let i = 0; i < round.matches; i++) {
-      const p1 = roundPlayers[i * 2];
-      const p2 = roundPlayers[i * 2 + 1];
-      if (!p1 || !p2) continue;
-      const exists = state.matches.some(m => m.round === round.name && m.player1 === p1 && m.player2 === p2);
-      if (!exists) {
-        state.matches.push({ id: `m_${roundIndex}_${i}_${Date.now()}`, round: round.name, player1: p1, player2: p2, result: null });
-        added++;
-      }
-    }
-  });
-  if (added > 0) { savePmMatch(); alert(`${added} match(s) importé(s).`); }
-  else alert('Tous les matchs disponibles sont déjà présents.');
-  showTab('matchs');
+window.adminPickBracketWinner = (roundIndex, matchIndex, side) => {
+  pendingPick = { key: `${roundIndex}_${matchIndex}`, side };
+  showTab('resultats');
 };
 
-window.adminPickWinner = (matchId, winner) => {
-  const match = state.matches.find(m => m.id === matchId);
-  if (!match) return;
-  state.matches.forEach(m => delete m._pendingWinner);
-  match._pendingWinner = winner;
-  showTab('res-matchs');
+window.adminSetBracketResult = (roundIndex, matchIndex, winnerSide, score) => {
+  const roundPlayers = roundIndex === 0
+    ? state.initialPlayers
+    : (state.officialResults[`round${roundIndex - 1}`] || []);
+  const winnerName = winnerSide === 'player1'
+    ? roundPlayers[matchIndex * 2]
+    : roundPlayers[matchIndex * 2 + 1];
+  if (!winnerName) return;
+
+  if (!state.officialResults[`round${roundIndex}`]) {
+    state.officialResults[`round${roundIndex}`] = Array(state.rounds[roundIndex].matches).fill(null);
+  }
+  state.officialResults[`round${roundIndex}`][matchIndex] = winnerName;
+  // Le vainqueur change la suite : on purge les rounds suivants.
+  for (let r = roundIndex + 1; r < state.rounds.length; r++) {
+    state.officialResults[`round${r}`] = Array(state.rounds[r].matches).fill(null);
+  }
+
+  // Pose le résultat (vainqueur + score) sur le slot de match correspondant.
+  syncMatchesFromBracket();
+  const match = state.matches.find(m => m.id === `r${roundIndex}_m${matchIndex}`);
+  if (match) match.result = { winner: winnerSide, score };
+
+  pendingPick = null;
+  saveTableau();
+  showTab('resultats');
 };
 
-window.adminSetResult = (matchId, winner, score) => {
-  const match = state.matches.find(m => m.id === matchId);
-  if (!match) return;
-  delete match._pendingWinner;
-  match.result = { winner, score };
-  savePmMatch();
-  showTab('res-matchs');
-};
-
-window.adminClearResult = (matchId) => {
-  const match = state.matches.find(m => m.id === matchId);
-  if (!match) return;
-  match.result = null;
-  savePmMatch();
-  showTab('res-matchs');
+window.adminClearBracketResult = (roundIndex, matchIndex) => {
+  if (state.officialResults[`round${roundIndex}`]) {
+    state.officialResults[`round${roundIndex}`][matchIndex] = null;
+  }
+  for (let r = roundIndex + 1; r < state.rounds.length; r++) {
+    state.officialResults[`round${r}`] = Array(state.rounds[r].matches).fill(null);
+  }
+  pendingPick = null;
+  saveTableau();
+  showTab('resultats');
 };
 
 // ── Init ───────────────────────────────────────────────────────────────────
 
 (async () => {
   await loadState();
-  updateSidebarTournament();
   showTab('tournois');
 })();

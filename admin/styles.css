@@ -285,7 +285,31 @@ tr:hover td { background: #fafafa; }
 .results-player-btn:last-child { border-bottom: none; }
 .results-player-btn:hover      { background: #e8f5e9; }
 .results-player-btn.winner     { background: #0c6b2f; color: white; font-weight: bold; }
+.results-player-btn.loser      { color: #999; text-decoration: line-through; cursor: default; }
+.results-player-btn.pending    { background: #fff3e0; box-shadow: inset 3px 0 0 #f57c00; font-weight: bold; }
 .results-player-btn.waiting    { color: #bbb; cursor: default; font-style: italic; }
+
+.results-score-line {
+  padding: 8px 12px;
+  border-top: 1px solid #eee;
+  font-size: 13px;
+  color: #0c6b2f;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.results-score-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.results-score-chips .score-chip { padding: 4px 10px; font-size: 12px; }
+.score-chip.wo { background: #ffe0b2; color: #e65100; }
+.score-chip.ab { background: #ffcdd2; color: #b71c1c; }
+.score-chip.wo:hover { background: #f57c00; color: white; }
+.score-chip.ab:hover { background: #c62828; color: white; }
 
 /* ── Résultats match ─────────────────────────────────────────────────────── */
 

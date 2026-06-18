@@ -25,11 +25,22 @@ export const state = {
 
 export async function loadState() {
   const [config, all] = await Promise.all([loadConfig(), loadAllTournaments()]);
-  state.tournamentList = all.map(t => ({ id: t.id, name: t.name || t.id }));
-  const activeId = (config.activeTournamentId && all.find(t => t.id === config.activeTournamentId))
-    ? config.activeTournamentId
-    : (all.length > 0 ? all[0].id : null);
-  if (activeId) await switchTournament(activeId);
+  state.tournamentList = all.map(t => ({
+    id: t.id,
+    name: t.name || t.id,
+    playersCount:  (t.rg_initialPlayers || []).length,
+    bracketsCount: (t.rg_players || []).length,
+    matchsCount:   (t.pm_matches || []).length,
+  }));
+}
+
+function refreshTournamentSummary() {
+  const t = state.tournamentList.find(t => t.id === state.currentTournamentId);
+  if (!t) return;
+  t.name = state.tournamentName;
+  t.playersCount  = state.initialPlayers.length;
+  t.bracketsCount = state.rg_players.length;
+  t.matchsCount   = state.matches.length;
 }
 
 export async function switchTournament(id) {
@@ -73,6 +84,8 @@ export async function createTournament(name) {
 
 export function saveTableau() {
   if (!state.currentTournamentId) return;
+  syncMatchesFromBracket();
+  refreshTournamentSummary();
   saveTournament(state.currentTournamentId, {
     name: state.tournamentName,
     rg_initialPlayers: state.initialPlayers,
@@ -80,7 +93,37 @@ export function saveTableau() {
     rg_results: state.officialResults,
     rg_players: state.rg_players,
     rg_playerMeta: state.playerMeta,
+    pm_matches: state.matches,
   }).catch(console.error);
+}
+
+// Dérive state.matches du bracket : un slot stable r{round}_m{index} par match,
+// inclus uniquement quand les deux joueurs sont connus. Les résultats déjà saisis
+// sont conservés par id ; les joueurs/round sont resynchronisés à chaque appel.
+export function syncMatchesFromBracket() {
+  const prevById = {};
+  state.matches.forEach(m => { prevById[m.id] = m; });
+
+  const next = [];
+  state.rounds.forEach((round, roundIndex) => {
+    const roundPlayers = roundIndex === 0
+      ? state.initialPlayers
+      : (state.officialResults[`round${roundIndex - 1}`] || []);
+
+    for (let i = 0; i < round.matches; i++) {
+      const p1 = roundPlayers[i * 2];
+      const p2 = roundPlayers[i * 2 + 1];
+      if (!p1 || !p2) continue;
+      const id = `r${roundIndex}_m${i}`;
+      const prev = prevById[id];
+      // On garde le résultat seulement s'il concerne toujours les mêmes joueurs.
+      const keepResult = prev && prev.result && prev.player1 === p1 && prev.player2 === p2
+        ? prev.result
+        : null;
+      next.push({ id, round: round.name, player1: p1, player2: p2, result: keepResult });
+    }
+  });
+  state.matches = next;
 }
 
 export function savePmMatch() {
