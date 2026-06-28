@@ -1,5 +1,9 @@
 import { state, loadState, switchTournament, createTournament, saveTableau, savePmMatch, ensurePlayerMeta, syncMatchesFromBracket } from './state.js';
-import { deleteTournament } from './firebase.js';
+import { deleteTournament, deleteTableauPred, deleteMatchPred } from './firebase.js';
+import {
+  onAuth, currentUser, getUsername, adminConfigExists, initAdmin, login, logout,
+  changeUsername, changePassword, authErrorMessage, isAdminAccount,
+} from './adminauth.js';
 
 // ── Tab routing ────────────────────────────────────────────────────────────
 
@@ -12,13 +16,18 @@ let pendingPick = null;
 export function showTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('tab-tournois');
+  // Onglets « per-tournoi » (config/joueurs/resultats) restent rattachés à Tournois.
+  const navId = (tab === 'compte') ? 'tab-compte' : 'tab-tournois';
+  const btn = document.getElementById(navId);
   if (btn) btn.classList.add('active');
   const builders = {
-    'tournois':  buildTournois,
-    'config':    buildConfig,
-    'joueurs':   buildJoueurs,
-    'resultats': buildResultats,
+    'tournois':     buildTournois,
+    'config':       buildConfig,
+    'joueurs':      buildJoueurs,
+    'resultats':    buildResultats,
+    'participants': buildParticipants,
+    'user':         buildUserPronos,
+    'compte':       buildCompte,
   };
   document.getElementById('content').innerHTML = (builders[tab] || buildTournois)();
 }
@@ -65,6 +74,7 @@ function buildTournois() {
         <td style="display:flex; gap:6px; flex-wrap:wrap;">
           <button class="btn-blue"  onclick="openTournament('${nameEsc}', 'config')">⚙️ Configurer</button>
           <button class="btn-blue"  onclick="openTournament('${nameEsc}', 'joueurs')">👥 Joueurs & Têtes</button>
+          <button class="btn-blue"  onclick="openTournament('${nameEsc}', 'participants')">🧑‍🤝‍🧑 Participants</button>
           <button class="btn-green" onclick="openTournament('${nameEsc}', 'resultats')">🛠️ Résultats</button>
           <button class="btn-red"   onclick="adminDeleteTournament('${nameEsc}')">🗑️ Supprimer</button>
         </td>
@@ -207,6 +217,125 @@ function buildJoueurs() {
   return html;
 }
 
+// ── Participants (comptes + pronos réels via sous-collections) ──────────────
+
+let viewingUid = null;
+
+function participantsByUid() {
+  const byUid = new Map();
+  state.tableauPreds.forEach(p => byUid.set(p.uid, { uid: p.uid, name: p.displayName || p.uid, t: p, m: null }));
+  state.matchPreds.forEach(p => {
+    const e = byUid.get(p.uid) || { uid: p.uid, name: p.displayName || p.uid, t: null, m: null };
+    e.m = p; if (p.displayName) e.name = p.displayName;
+    byUid.set(p.uid, e);
+  });
+  return [...byUid.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function buildParticipants() {
+  const err = requireTournament('🧑‍🤝‍🧑 Participants');
+  if (err) return err;
+
+  let html = backLink();
+  html += `<h2 class="page-title">🧑‍🤝‍🧑 Participants — ${state.tournamentName}</h2>`;
+
+  const users = participantsByUid();
+  const tTotal = state.rounds.reduce((a, r) => a + r.matches, 0);
+
+  html += `<div class="box"><h3>Comptes ayant pronostiqué (${users.length})</h3>`;
+  if (!users.length) {
+    html += `<p style="color:#888;">Aucun participant pour ce tournoi pour l'instant.</p>`;
+  } else {
+    html += `<table><thead><tr><th>Pseudo</th><th>UID (compte)</th><th>Tableau</th><th>Matchs verrouillés</th><th>Actions</th></tr></thead><tbody>`;
+    users.forEach(u => {
+      const tFilled = u.t ? Object.values(u.t.predictions || {}).flat().filter(Boolean).length : 0;
+      const tStatus = u.t ? `${u.t.locked ? '🔒 Verrouillé' : '✏️ En cours'} (${tFilled}/${tTotal})` : '—';
+      const mLocked = u.m ? Object.values(u.m.predictions || {}).filter(x => x && x.locked).length : 0;
+      const uidEsc = u.uid.replace(/'/g, "\\'");
+      html += `<tr>
+        <td><strong>${u.name}</strong></td>
+        <td style="font-size:11px; color:#999; font-family:monospace;">${u.uid}</td>
+        <td>${tStatus}</td>
+        <td>${u.m ? `${mLocked}/${state.matches.length}` : '—'}</td>
+        <td style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="btn-blue" onclick="adminViewUser('${uidEsc}')">👁️ Voir les pronos</button>
+          <button class="btn-red" style="padding:6px 12px; font-size:12px;" onclick="adminDeleteUserPreds('${uidEsc}')">Supprimer</button>
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+// Bracket d'un utilisateur en lecture seule (réutilise le layout des résultats).
+function renderUserBracket(tp) {
+  let html = `<div class="results-bracket">`;
+  state.rounds.forEach((round, ri) => {
+    const roundPlayers = ri === 0 ? state.initialPlayers : (state.officialResults[`round${ri - 1}`] || []);
+    html += `<div class="results-round"><div class="results-round-header">${round.name}</div>`;
+    for (let i = 0; i < round.matches; i++) {
+      const p1 = roundPlayers[i * 2];
+      const p2 = roundPlayers[i * 2 + 1];
+      const pick = ((tp.predictions || {})[`round${ri}`] || [])[i];
+      const off  = (state.officialResults[`round${ri}`] || [])[i];
+      html += `<div class="results-match">`;
+      [p1, p2].forEach(p => {
+        if (!p) { html += `<div class="results-player-btn waiting">—</div>`; return; }
+        let cls = 'results-player-btn';
+        if (pick === p) { cls += (off === null || off === undefined) ? ' picked' : (off === p ? ' winner' : ' lost'); }
+        html += `<div class="${cls}">${p}</div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+function buildUserPronos() {
+  const err = requireTournament('Pronos');
+  if (err) return err;
+  const uid = viewingUid;
+  const tp = state.tableauPreds.find(p => p.uid === uid);
+  const mp = state.matchPreds.find(p => p.uid === uid);
+  const name = (tp && tp.displayName) || (mp && mp.displayName) || uid || '—';
+
+  let html = `<a href="#" class="back-link" style="display:inline-block; margin-bottom:16px;"
+    onclick="event.preventDefault(); showTab('participants');">← Retour aux participants</a>`;
+  html += `<h2 class="page-title">Pronos de ${name}</h2>`;
+  html += `<p style="font-size:12px; color:#999; font-family:monospace; margin-top:-8px;">UID : ${uid}</p>`;
+
+  html += `<div class="box"><h3>🏆 Tableau ${tp && tp.locked ? '🔒' : ''}</h3>`;
+  html += tp ? renderUserBracket(tp) : `<p style="color:#888;">Aucun pronostic tableau.</p>`;
+  html += `</div>`;
+
+  html += `<div class="box"><h3>🎾 Pronostics matchs</h3>`;
+  if (!mp || !state.matches.length) {
+    html += `<p style="color:#888;">Aucun pronostic match.</p>`;
+  } else {
+    html += `<table><thead><tr><th>Tour</th><th>Match</th><th>Vainqueur pronostiqué</th><th>Score</th><th>Verrouillé</th><th>Résultat officiel</th></tr></thead><tbody>`;
+    state.matches.forEach(m => {
+      const pred = (mp.predictions || {})[m.id] || {};
+      const myName = pred.winner ? (pred.winner === 'player1' ? m.player1 : m.player2) : '<span style="color:#bbb;">—</span>';
+      const res = m.result ? `${m.result.winner === 'player1' ? m.player1 : m.player2} ${m.result.score}` : '<span style="color:#bbb;">—</span>';
+      html += `<tr>
+        <td style="color:#888;">${m.round}</td>
+        <td>${m.player1} <span style="color:#bbb;">vs</span> ${m.player2}</td>
+        <td>${myName}</td>
+        <td>${pred.score || '<span style="color:#bbb;">—</span>'}</td>
+        <td>${pred.locked ? '🔒' : ''}</td>
+        <td>${res}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
 // ── Résultats (bracket fusionné tableau + matchs) ───────────────────────────
 
 function buildResultats() {
@@ -286,9 +415,75 @@ function buildResultats() {
   return html;
 }
 
+// ── Compte admin ─────────────────────────────────────────────────────────────
+
+function buildCompte() {
+  const uname = (currentUser() && currentUser().displayName) || '';
+  let html = `<h2 class="page-title">🔐 Compte admin</h2>`;
+
+  html += `<div class="box">
+    <h3>Identifiant de connexion</h3>
+    <p style="font-size:13px; color:#888; margin-top:0;">Le nom que tu saisis pour te connecter.</p>
+    <div class="form-row">
+      <input id="adminUsernameInput" type="text" value="${uname}" style="width:240px;" />
+      <button class="btn-blue" onclick="adminChangeUsername()">Changer l'identifiant</button>
+    </div>
+  </div>`;
+
+  html += `<div class="box">
+    <h3>Mot de passe</h3>
+    <div class="form-row" style="flex-wrap:wrap; gap:10px;">
+      <input id="adminPwdCurrent" type="password" placeholder="Mot de passe actuel" style="width:200px;" />
+      <input id="adminPwdNew"     type="password" placeholder="Nouveau mot de passe" style="width:200px;" />
+      <button class="btn-blue" onclick="adminChangePassword()">Changer le mot de passe</button>
+    </div>
+    <p style="font-size:13px; color:#888; margin:6px 0 0;">6 caractères minimum.</p>
+  </div>`;
+
+  return html;
+}
+
 // ── Actions ────────────────────────────────────────────────────────────────
 
 window.showTab = showTab;
+
+window.adminChangeUsername = async () => {
+  const v = document.getElementById('adminUsernameInput').value.trim();
+  if (!v) return alert("Identifiant vide.");
+  try {
+    await changeUsername(v);
+    document.getElementById('adminUserLabel').textContent = v;
+    alert('Identifiant mis à jour.');
+  } catch (err) { alert(authErrorMessage(err)); }
+};
+
+window.adminChangePassword = async () => {
+  const cur = document.getElementById('adminPwdCurrent').value;
+  const next = document.getElementById('adminPwdNew').value;
+  if (!cur || !next) return alert('Remplis les deux champs.');
+  if (next.length < 6) return alert('Nouveau mot de passe trop court (6 min).');
+  try {
+    await changePassword(cur, next);
+    alert('Mot de passe mis à jour.');
+    showTab('compte');
+  } catch (err) { alert(authErrorMessage(err)); }
+};
+
+window.adminLogout = async () => { await logout(); };
+
+window.adminViewUser = (uid) => { viewingUid = uid; showTab('user'); };
+
+window.adminDeleteUserPreds = async (uid) => {
+  const u = participantsByUid().find(x => x.uid === uid);
+  if (!confirm(`Supprimer tous les pronostics de "${u ? u.name : uid}" sur ce tournoi ? Irréversible.`)) return;
+  await Promise.all([
+    deleteTableauPred(state.currentTournamentId, uid).catch(console.error),
+    deleteMatchPred(state.currentTournamentId, uid).catch(console.error),
+  ]);
+  state.tableauPreds = state.tableauPreds.filter(p => p.uid !== uid);
+  state.matchPreds = state.matchPreds.filter(p => p.uid !== uid);
+  showTab('participants');
+};
 
 window.openTournament = async (id, view) => {
   pendingPick = null;
@@ -464,9 +659,80 @@ window.adminClearBracketResult = (roundIndex, matchIndex) => {
   showTab('resultats');
 };
 
+// ── Authentification (gate) ──────────────────────────────────────────────────
+
+let appLoaded = false;
+
+function showGate(html) {
+  document.getElementById('admin-layout').hidden = true;
+  const gate = document.getElementById('admin-gate');
+  gate.hidden = false;
+  document.getElementById('admin-gate-card').innerHTML = html;
+}
+
+function hideGate() {
+  document.getElementById('admin-gate').hidden = true;
+  document.getElementById('admin-layout').hidden = false;
+}
+
+async function renderLoginScreen(errorMsg = '') {
+  const firstTime = !(await adminConfigExists());
+  const uname = firstTime ? 'admin' : await getUsername();
+  showGate(`
+    <h1 class="admin-gate-title">⚙️ Administration</h1>
+    ${firstTime
+      ? `<p class="admin-gate-info">Première configuration : un compte admin va être créé
+         (identifiant <strong>admin</strong>, mot de passe <strong>admin</strong>). Pense à le changer ensuite.</p>`
+      : ''}
+    ${errorMsg ? `<p class="admin-gate-error">${errorMsg}</p>` : ''}
+    <form onsubmit="adminLoginSubmit(event, ${firstTime})">
+      <input id="adminLoginUser" type="text" placeholder="Identifiant" value="${uname}" autocomplete="username" />
+      <input id="adminLoginPwd"  type="password" placeholder="Mot de passe" autocomplete="current-password" required />
+      <button class="admin-gate-btn" type="submit">${firstTime ? 'Créer & se connecter' : 'Se connecter'}</button>
+    </form>
+    <a href="../" class="admin-gate-back">← Retour au jeu</a>
+  `);
+}
+
+window.adminLoginSubmit = async (event, firstTime) => {
+  event.preventDefault();
+  const user = document.getElementById('adminLoginUser').value.trim();
+  const pwd  = document.getElementById('adminLoginPwd').value;
+  try {
+    if (firstTime) await initAdmin(user || 'admin', pwd || 'admin');
+    else           await login(user, pwd);
+    // onAuth prend le relais pour charger l'app.
+  } catch (err) {
+    renderLoginScreen(authErrorMessage(err));
+  }
+};
+
 // ── Init ───────────────────────────────────────────────────────────────────
 
-(async () => {
-  await loadState();
-  showTab('tournois');
-})();
+onAuth(async (user) => {
+  // Aucun compte, ou un compte qui n'est PAS l'admin → on reste sur le login.
+  if (!user) {
+    appLoaded = false;
+    renderLoginScreen();
+    return;
+  }
+  if (!isAdminAccount(user)) {
+    appLoaded = false;
+    await logout();            // referme toute session non-admin → onAuth(null)
+    return;
+  }
+  hideGate();
+  const label = document.getElementById('adminUserLabel');
+  if (label) label.textContent = user.displayName || 'admin';
+  if (!appLoaded) {
+    appLoaded = true;
+    try {
+      await loadState();
+      showTab('tournois');
+    } catch (err) {
+      document.getElementById('content').innerHTML =
+        `<div class="box"><p style="color:#b71c1c;">Erreur de chargement : ${err.message}</p>
+         <button class="btn-blue" onclick="location.reload()">Recharger</button></div>`;
+    }
+  }
+});

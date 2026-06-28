@@ -1,6 +1,8 @@
-import { state, uiState, saveTableau, getPlayerMetaParts, splitDisplayName } from './state.js';
+import { state, uiState, saveMyTableau, isMine, getPlayerMetaParts, splitDisplayName } from './state.js';
 
 // ── Calcul des scores ──────────────────────────────────────────────────────
+
+export function tableauScoreOf(player) { return calcScore(player); }
 
 function calcScore(player) {
   let score = 0;
@@ -12,118 +14,54 @@ function calcScore(player) {
   return score;
 }
 
-function calcMaxPossible(player) {
-  const getPossible = (ri, mi) => {
-    const official = (state.officialResults[`round${ri}`] || [])[mi];
-    if (official) return [official];
-    if (ri === 0) return [state.initialPlayers[mi * 2], state.initialPlayers[mi * 2 + 1]].filter(Boolean);
-    const left  = getPossible(ri - 1, mi * 2);
-    const right = getPossible(ri - 1, mi * 2 + 1);
-    return [...new Set([...left, ...right])];
-  };
-  let score = 0;
+export function countFilled(player) {
+  let filled = 0, total = 0;
   state.rounds.forEach((round, ri) => {
-    (player.predictions[`round${ri}`] || []).forEach((winner, mi) => {
-      if (!winner) return;
-      const official = (state.officialResults[`round${ri}`] || [])[mi];
-      if (official === winner) { score += round.points; return; }
-      if (official !== null && official !== undefined) return;
-      if (getPossible(ri, mi).includes(winner)) score += round.points;
-    });
+    total += round.matches;
+    (player.predictions[`round${ri}`] || []).forEach(w => { if (w) filled++; });
   });
-  return score;
+  return { filled, total };
 }
 
-// ── Dashboard ──────────────────────────────────────────────────────────────
+// ── Mes Pronostics (CTA basé sur le compte) ────────────────────────────────
 
-export function showTableauDashboard() {
-  state.tPlayers.forEach(p => { p.score = calcScore(p); });
-  const sorted = [...state.tPlayers].sort((a, b) => b.score - a.score);
-
-  let html = `<h2>Prono Tableau — ${state.tournamentName || 'Aucun tournoi'}</h2>
-    <div class="dashboard">`;
-  sorted.forEach((p, i) => {
-    const max = calcMaxPossible(p);
-    html += `<div class="player-card" onclick="showBracket('${p.name}')">
-      <div class="lock-badge">${p.locked ? '🔒' : '✏️'}</div>
-      <h3>${i + 1}. ${p.name}</h3>
-      <div class="player-card-score">${p.score} pts</div>
-      <div style="font-size:13px; color:#888;">Max possible : ${max} pts</div>
-    </div>`;
-  });
-  if (!state.tPlayers.length) html += `<p>Aucun joueur. Cliquez sur "+ Nouveau joueur".</p>`;
-  html += `</div>`;
-  document.getElementById('content').innerHTML = html;
+// Garantit que l'utilisateur courant a un bracket (le crée si besoin), sans rendu.
+export function ensureMyTableau() {
+  if (!state.me || !state.currentTournamentId) return null;
+  let player = state.tPlayers.find(p => p.uid === state.me.uid);
+  if (!player) {
+    player = { uid: state.me.uid, name: state.me.name, score: 0, locked: false, predictions: {} };
+    state.rounds.forEach((r, i) => { player.predictions[`round${i}`] = Array(r.matches).fill(null); });
+    state.tPlayers.push(player);
+    saveMyTableau(player);
+  }
+  return player;
 }
 
-// ── Classement ─────────────────────────────────────────────────────────────
-
-export function showTableauRanking() {
-  state.tPlayers.forEach(p => { p.score = calcScore(p); });
-  const sorted = [...state.tPlayers].sort((a, b) => b.score - a.score);
-
-  let html = `<h2>Classement Tableau — ${state.tournamentName || ''}</h2>
-    <table><thead><tr><th>#</th><th>Joueur</th><th>Statut</th>`;
-  state.rounds.forEach((r, i) => { html += `<th title="${r.name}">R${i + 1}</th>`; });
-  html += `<th>Points</th><th>Max</th></tr></thead><tbody>`;
-
-  sorted.forEach((p, i) => {
-    const max = calcMaxPossible(p);
-    html += `<tr><td>${i + 1}</td><td><strong>${p.name}</strong></td>
-      <td>${p.locked ? '🔒 Prêt' : '✏️ En cours'}</td>`;
-    state.rounds.forEach((round, ri) => {
-      let pts = 0;
-      (p.predictions[`round${ri}`] || []).forEach((w, mi) => {
-        if (w && w === (state.officialResults[`round${ri}`] || [])[mi]) pts += round.points;
-      });
-      html += `<td>${pts} pts</td>`;
-    });
-    html += `<td style="font-weight:bold; color:#0c6b2f;">${p.score} pts</td>
-      <td>${max} pts</td></tr>`;
-  });
-  html += `</tbody></table>`;
-  document.getElementById('content').innerHTML = html;
-}
-
-// ── Nouveau joueur ─────────────────────────────────────────────────────────
-
-export function newTableauPlayer() {
+export function openMyTableau() {
+  if (!state.me) { window.requireLogin && window.requireLogin(); return; }
   if (!state.currentTournamentId) {
     document.getElementById('content').innerHTML = `<p style="color:#888;">Aucun tournoi actif.</p>`;
     return;
   }
-  document.getElementById('content').innerHTML = `
-    <h2>Nouveau joueur</h2>
-    <p style="color:#666; margin-bottom:12px;">Tournoi : <strong>${state.tournamentName}</strong></p>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <input id="playerName" placeholder="Ton pseudo" />
-      <button class="green" onclick="createTableauPlayer()">Créer mon bracket</button>
-    </div>`;
-}
-
-export function createTableauPlayer() {
-  const name = document.getElementById('playerName').value.trim();
-  if (!name) return alert('Entre un pseudo');
-  if (state.tPlayers.find(p => p.name === name)) return alert('Pseudo déjà utilisé');
-  const player = { name, score: 0, locked: false, predictions: {} };
-  state.rounds.forEach((r, i) => { player.predictions[`round${i}`] = Array(r.matches).fill(null); });
-  state.tPlayers.push(player);
-  saveTableau();
-  showBracket(player.name);
+  const player = ensureMyTableau();
+  showBracket(player.uid);
 }
 
 // ── Bracket ────────────────────────────────────────────────────────────────
 
-export function lockBracket(playerName) {
+export function lockBracket(uid) {
+  const player = state.tPlayers.find(p => p.uid === uid);
+  if (!player || !isMine(player)) return;
   if (!confirm("Verrouiller définitivement ton tableau ?")) return;
-  const player = state.tPlayers.find(p => p.name === playerName);
   player.locked = true;
-  saveTableau();
-  showBracket(playerName);
+  saveMyTableau(player);
+  showBracket(uid, bracketCtx);
 }
 
-export function selectWinner(playerName, roundIndex, matchIndex, winner) {
-  const player = state.tPlayers.find(p => p.name === playerName);
+export function selectWinner(uid, roundIndex, matchIndex, winner) {
+  const player = state.tPlayers.find(p => p.uid === uid);
+  if (!player || !isMine(player)) return;
   if (player.locked) return alert('Ton tableau est verrouillé !');
   const old = player.predictions[`round${roundIndex}`][matchIndex];
   player.predictions[`round${roundIndex}`][matchIndex] = winner;
@@ -133,19 +71,24 @@ export function selectWinner(playerName, roundIndex, matchIndex, winner) {
       if (player.predictions[`round${r}`][mi] === old) player.predictions[`round${r}`][mi] = null;
     }
   }
-  saveTableau();
-  showBracket(playerName);
+  saveMyTableau(player);
+  showBracket(uid, bracketCtx);
 }
 
-export function toggleRound(roundIndex, playerName) {
+export function toggleRound(roundIndex, uid) {
   if (uiState.hiddenRounds.has(roundIndex)) uiState.hiddenRounds.delete(roundIndex);
   else uiState.hiddenRounds.add(roundIndex);
-  showBracket(playerName);
+  showBracket(uid, bracketCtx);
 }
 
-export function showBracket(playerName) {
-  const player = state.tPlayers.find(p => p.name === playerName);
+// Conteneur de rendu courant du bracket (pour re-render après une action).
+let bracketCtx = 'content';
+
+export function showBracket(uid, containerId = 'content') {
+  bracketCtx = containerId;
+  const player = state.tPlayers.find(p => p.uid === uid);
   if (!player) return;
+  const editable = isMine(player) && !player.locked;
 
   let firstVisible = 0;
   while (uiState.hiddenRounds.has(firstVisible) && firstVisible < state.rounds.length) firstVisible++;
@@ -158,8 +101,9 @@ export function showBracket(playerName) {
 
   let html = `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
     <h2 style="margin:0;">Tableau de ${player.name}</h2>`;
-  if (!player.locked) html += `<button class="red" onclick="lockBracket('${player.name}')">🔒 Verrouiller</button>`;
-  else html += `<span style="color:#0c6b2f; font-weight:bold;">🔒 Verrouillé</span>`;
+  if (!isMine(player)) html += `<span style="color:#888; font-weight:bold;" title="Tableau d'un autre joueur — lecture seule">👁️ Lecture seule</span>`;
+  else if (!player.locked) html += `<button class="red" title="Verrouille définitivement ton tableau : plus aucune modification possible ensuite" onclick="lockBracket('${player.uid}')">🔒 Verrouiller</button>`;
+  else html += `<span style="color:#0c6b2f; font-weight:bold;" title="Tableau verrouillé — modification impossible">🔒 Verrouillé</span>`;
   html += `</div>
     <div class="bracket" style="min-height:${minH}px; --match-height:${H}px;">`;
 
@@ -174,10 +118,10 @@ export function showBracket(playerName) {
     const roundWidth   = uiState.measuredRoundWidths[ri] || 220;
 
     html += `<div class="round ${isCollapsed ? 'collapsed' : ''}" style="--match-width:${roundWidth}px;">
-      <div class="vertical-title" onclick="toggleRound(${ri}, '${player.name}')">${round.name}</div>
+      <div class="vertical-title" onclick="toggleRound(${ri}, '${player.uid}')">${round.name}</div>
       <div class="round-header">
         <h2>${round.name}<br><small>${round.points} pts</small></h2>
-        <button class="toggle-btn" onclick="toggleRound(${ri}, '${player.name}')">👁️ Masquer</button>
+        <button class="toggle-btn" onclick="toggleRound(${ri}, '${player.uid}')">👁️ Masquer</button>
       </div>
       <div class="match-container" style="--round-gap:${roundGap}px; --round-offset:${roundOffset}px;">`;
 
@@ -196,7 +140,7 @@ export function showBracket(playerName) {
           const off   = (state.officialResults[`round${ri}`] || [])[i];
           let cls = 'player-btn' + (sel ? ' selected' : '');
           if (sel && off !== null && off !== undefined) cls += (off === p ? ' correct' : ' incorrect');
-          html += `<button class="${cls}" onclick="selectWinner('${player.name}',${ri},${i},'${p.replace(/'/g,"\\'")}')  " ${player.locked ? 'disabled' : ''}>
+          html += `<button class="${cls}" onclick="selectWinner('${player.uid}',${ri},${i},'${p.replace(/'/g,"\\'")}')" ${editable ? '' : 'disabled'}>
             <span class="player-label">
               <span class="player-seed">${meta.seed}</span>
               <span class="player-name"><span>${parts.lastName}</span><span>${parts.firstName}</span></span>
@@ -210,11 +154,11 @@ export function showBracket(playerName) {
     html += `</div></div>`;
   });
   html += `</div>`;
-  document.getElementById('content').innerHTML = html;
+  document.getElementById(containerId).innerHTML = html;
 
   // Auto-ajustement des dimensions
   requestAnimationFrame(() => {
-    const bracketEl = document.querySelector('#content .bracket');
+    const bracketEl = document.querySelector(`#${containerId} .bracket`);
     if (!bracketEl) return;
     bracketEl.classList.add('auto-height', 'auto-size');
     let maxH = 0;
@@ -234,7 +178,7 @@ export function showBracket(playerName) {
         nextWidths.some((w, i) => Math.abs(w - (uiState.measuredRoundWidths[i] || 0)) >= 2)) {
       uiState.measuredMatchHeight = newH;
       uiState.measuredRoundWidths = nextWidths;
-      showBracket(playerName);
+      showBracket(uid, containerId);
     }
   });
 }

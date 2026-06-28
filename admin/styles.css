@@ -14,6 +14,10 @@ body {
   min-height: 100vh;
 }
 
+/* L'attribut hidden doit primer sur le display des classes ci-dessus/dessous. */
+.admin-layout[hidden],
+.admin-gate[hidden] { display: none !important; }
+
 .sidebar {
   width: 220px;
   flex-shrink: 0;
@@ -285,6 +289,8 @@ tr:hover td { background: #fafafa; }
 .results-player-btn:last-child { border-bottom: none; }
 .results-player-btn:hover      { background: #e8f5e9; }
 .results-player-btn.winner     { background: #0c6b2f; color: white; font-weight: bold; }
+.results-player-btn.picked     { background: #e3f2fd; color: #0d47a1; font-weight: bold; box-shadow: inset 3px 0 0 #1976d2; }
+.results-player-btn.lost       { background: #ffebee; color: #b71c1c; font-weight: bold; text-decoration: line-through; }
 .results-player-btn.loser      { color: #999; text-decoration: line-through; cursor: default; }
 .results-player-btn.pending    { background: #fff3e0; box-shadow: inset 3px 0 0 #f57c00; font-weight: bold; }
 .results-player-btn.waiting    { color: #bbb; cursor: default; font-style: italic; }
@@ -357,3 +363,53 @@ tr:hover td { background: #fafafa; }
   .admin-main { margin-left: 0; padding: 16px; }
   .admin-layout { flex-direction: column; }
 }
+
+/* ── Pied de sidebar (utilisateur + déconnexion) ───────────────────────────── */
+
+.sidebar-foot {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid #2d2d4e;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sidebar-user { color: #9aa; font-size: 13px; font-weight: bold; }
+.sidebar-foot .btn-red { width: 100%; }
+
+/* ── Écran de connexion admin ──────────────────────────────────────────────── */
+
+.admin-gate {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  background: #1a1a2e;
+  padding: 20px;
+}
+.admin-gate-card {
+  background: white; border-radius: 16px; padding: 28px 26px;
+  width: 340px; max-width: 100%;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+.admin-gate-title { margin: 0 0 16px; color: #1a1a2e; font-size: 1.3rem; text-align: center; }
+.admin-gate-info {
+  background: #fff8e1; color: #7a5c00; border-radius: 8px;
+  padding: 10px 12px; font-size: 13px; margin: 0 0 14px;
+}
+.admin-gate-error {
+  background: #ffebee; color: #b71c1c; border-radius: 8px;
+  padding: 8px 10px; font-size: 13px; margin: 0 0 12px;
+}
+.admin-gate-card form { display: flex; flex-direction: column; gap: 10px; }
+.admin-gate-card input {
+  padding: 11px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px;
+}
+.admin-gate-btn {
+  padding: 12px; background: #0c6b2f; color: white; border: none; border-radius: 8px;
+  font-weight: bold; font-size: 14px; cursor: pointer;
+}
+.admin-gate-btn:hover { background: #095324; }
+.admin-gate-back {
+  display: block; text-align: center; margin-top: 16px;
+  color: #888; font-size: 13px; text-decoration: none;
+}
+.admin-gate-back:hover { color: #555; }

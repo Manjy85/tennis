@@ -29,78 +29,321 @@ header h1 { margin: 0; font-size: 1.3rem; }
 }
 .header-admin-link:hover { background: rgba(255,255,255,0.15); color: white; }
 
+.header-right { display: flex; align-items: center; gap: 10px; }
+.auth-zone { display: flex; align-items: center; gap: 8px; }
+.auth-hello { color: white; font-size: 13px; font-weight: bold; }
+.auth-btn-ghost {
+  color: white; background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.35); border-radius: 8px;
+  padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer;
+}
+.auth-btn-ghost:hover { background: rgba(255,255,255,0.22); }
+
+/* ── Modale d'authentification ─────────────────────────────────────────────── */
+
+.auth-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; }
+.auth-modal[hidden] { display: none; }
+.auth-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.45); }
+.auth-modal-card {
+  position: relative; background: white; border-radius: 16px;
+  padding: 26px 24px; width: 340px; max-width: calc(100vw - 32px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.auth-close {
+  position: absolute; top: 10px; right: 12px; background: none; border: none;
+  font-size: 24px; color: #999; cursor: pointer; line-height: 1;
+}
+.auth-title { margin: 0 0 14px; color: #0c6b2f; font-size: 1.1rem; }
+.auth-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.auth-tab {
+  flex: 1; padding: 8px; border-radius: 8px; border: none; cursor: pointer;
+  background: #eceff1; color: #555; font-weight: bold; font-size: 13px;
+}
+.auth-tab.active { background: #0c6b2f; color: white; }
+.auth-error {
+  background: #ffebee; color: #b71c1c; border-radius: 8px;
+  padding: 8px 10px; font-size: 13px; margin: 0 0 12px;
+}
+.auth-modal-card form { display: flex; flex-direction: column; gap: 10px; }
+.auth-modal-card input {
+  padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px;
+}
+.auth-submit {
+  padding: 11px; background: #0c6b2f; color: white; border: none; border-radius: 8px;
+  font-weight: bold; font-size: 14px; cursor: pointer;
+}
+.auth-submit:hover { background: #095324; }
+.auth-sep { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: #aaa; font-size: 12px; }
+.auth-sep::before, .auth-sep::after { content: ''; flex: 1; height: 1px; background: #e0e0e0; }
+.auth-google {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 10px; background: white; border: 1px solid #ccc; border-radius: 8px;
+  font-size: 14px; font-weight: bold; color: #444; cursor: pointer;
+}
+.auth-google:hover { background: #f7f7f7; }
+.auth-google .g-logo {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: conic-gradient(#ea4335 0 25%, #fbbc05 0 50%, #34a853 0 75%, #4285f4 0);
+  color: white; font-weight: 900; font-size: 12px;
+}
+
+/* ── Marqueur "toi" ────────────────────────────────────────────────────────── */
+
+/* Anneau orange qui épouse le border-radius de la carte (box-shadow, pas outline) */
+.player-card.is-mine { box-shadow: 0 0 0 2px #f57c00, 0 2px 10px rgba(0,0,0,0.07); }
+.player-card.is-mine:hover { box-shadow: 0 0 0 2px #f57c00, 0 6px 18px rgba(0,0,0,0.12); }
+.mine-tag {
+  font-size: 11px; background: #f57c00; color: white;
+  padding: 1px 7px; border-radius: 10px; vertical-align: middle; font-weight: bold;
+}
+
+/* ── Page d'accueil (déconnecté) ───────────────────────────────────────────── */
+
+.welcome {
+  max-width: 480px;
+  margin: 8vh auto 0;
+  text-align: center;
+  padding: 40px 28px;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+}
+.welcome-emoji { font-size: 56px; line-height: 1; margin-bottom: 8px; }
+.welcome h2 { color: #0c6b2f; margin: 6px 0 10px; }
+.welcome p { color: #666; margin: 0 0 22px; }
+.welcome-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.welcome-actions button { padding: 12px 22px; font-size: 15px; }
+
+/* ── Nom de tournoi (quand un seul) ────────────────────────────────────────── */
+
+.tournament-name { font-weight: bold; color: #2a2f36; font-size: 15px; }
+
+/* ── Bandeau d'appel à l'action ────────────────────────────────────────────── */
+
+.cta-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  background: #fff6ee; border: 1px solid #ffd9b3;
+  border-radius: 14px; padding: 14px 18px; margin: 4px 0 22px;
+  font-size: 14px; color: #8a4b00;
+}
+.cta-banner.done { background: #eef9f0; border-color: #c8e6c9; color: #0c6b2f; }
+.cta-banner button { white-space: nowrap; }
+
+/* ── Détail des scores sur les cartes ──────────────────────────────────────── */
+
+.score-breakdown { font-size: 12px; color: #888; margin-bottom: 2px; }
+
+/* ── Parcours « Mes Pronostics » (sections) ────────────────────────────────── */
+
+.pronos-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.pronos-head h2 { margin: 0; }
+.ro-tag { color: #888; font-weight: bold; font-size: 13px; }
+
+.pronos-section { margin-bottom: 34px; }
+.pronos-step {
+  font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+  color: #0c6b2f; padding-bottom: 8px; margin-bottom: 14px;
+  border-bottom: 2px solid #e8f0ea;
+}
+
+/* ── Sous-onglets « Mes Pronostics » ───────────────────────────────────────── */
+
+.subtabs {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin: 4px 0 22px; border-bottom: 1px solid #e3e6ea; padding-bottom: 2px;
+}
+.subtab {
+  background: none; border: none; color: #666;
+  padding: 9px 16px; font-size: 14px; font-weight: bold; cursor: pointer;
+  border-radius: 10px 10px 0 0; border-bottom: 3px solid transparent; margin-bottom: -3px;
+}
+.subtab:hover  { color: #0c6b2f; opacity: 1; }
+.subtab.active { color: #f57c00; border-bottom-color: #f57c00; }
+
+.empty-state {
+  background: #f7f9fb; border: 1px dashed #d7dde3; border-radius: 12px;
+  padding: 26px; text-align: center; color: #777; font-size: 14px;
+}
+
+/* ── Classement : blocs + tables ───────────────────────────────────────────── */
+
+.ranking-block { margin-bottom: 36px; }
+.ranking-title {
+  margin: 0 0 12px; color: #1a2530; font-size: 1.1rem;
+  padding-bottom: 8px; border-bottom: 2px solid #e8f0ea;
+}
+.ranking-empty { color: #999; font-size: 14px; margin: 4px 0 0; }
+
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.ranking-table {
+  width: 100%; border-collapse: collapse; background: white;
+  border-radius: 12px; overflow: hidden; margin: 0 0 6px;
+  font-size: 14px; min-width: 420px;
+}
+.ranking-table th {
+  background: #1a2530; color: white; font-weight: bold;
+  padding: 11px 12px; text-align: center; white-space: nowrap; font-size: 12px;
+}
+.ranking-table th:nth-child(2) { text-align: left; }
+.ranking-table td { padding: 11px 12px; border-bottom: 1px solid #eef1f4; text-align: center; }
+.ranking-table td:nth-child(2) { text-align: left; }
+.ranking-table tr:last-child td { border-bottom: none; }
+.ranking-table .pts { font-weight: 800; color: #0c6b2f; }
+.ranking-table .max { color: #888; }
+.ranking-table tr.is-me-row { background: #fff6ee; }
+.ranking-table tr.is-me-row td:first-child { box-shadow: inset 3px 0 0 #f57c00; }
+
+.ranking-table.mini th { background: #2e7d32; }
+.mini-rank-head { margin: 14px 0 8px; font-weight: bold; color: #2e7d32; font-size: 14px; }
+.mini-rank-head small { color: #888; font-weight: normal; }
+
+/* ── Récap (matchs verrouillés, compact) ───────────────────────────────────── */
+
+.recap-table {
+  width: 100%; border-collapse: collapse; background: white;
+  border-radius: 12px; overflow: hidden; font-size: 13px;
+}
+.recap-table th {
+  background: #f0f2f5; color: #555; text-align: left; padding: 10px 12px; font-size: 12px;
+}
+.recap-table td { padding: 10px 12px; border-bottom: 1px solid #eef1f4; }
+.recap-table tr:last-child td { border-bottom: none; }
+.recap-score {
+  display: inline-block; min-width: 34px; text-align: center;
+  background: #eef3ff; color: #1a3a8a; font-weight: 800;
+  padding: 2px 9px; border-radius: 8px; font-size: 12px;
+}
+.recap-pick { font-size: 13px; color: #333; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+
+/* ── Récap : arbre (cellules style Tableau, lecture seule) ─────────────────── */
+
+/* .player-btn.recap-row : spécificité (0,2,0) pour battre .player-btn (display + color) */
+.player-btn.recap-row {
+  display: flex; align-items: center; gap: 8px;
+  cursor: default; background: #f2f4f7; color: #1a2530;  /* nom toujours en noir */
+}
+.player-btn.recap-row .player-name {
+  flex: 1; min-width: 0; display: block;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.player-btn.recap-row .rscore {
+  flex: none; width: 24px; text-align: center;
+  background: rgba(255,255,255,0.7); color: inherit;
+  font-weight: 800; font-size: 13px; padding: 1px 0; border-radius: 6px;
+}
+.player-btn.recap-row .rscore:empty { background: none; }
+
+/* Sélection / résultat : fonds clairs, texte lisible (pas de blanc sur clair) */
+.player-btn.recap-row.selected  { background: #e3f2fd; font-weight: bold; }
+.player-btn.recap-row.correct   { background: #e8f5e9; color: #0c6b2f; font-weight: bold; }
+.player-btn.recap-row.incorrect { background: #ffebee; color: #b71c1c; }
+
+.recap-cell.faint { opacity: 0.55; }
+.recap-cell.faint .recap-row { background: #f2f4f7; }
+
+/* ── Matchs restants : grille de cartes (style feed) ───────────────────────── */
+
+.match-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.match-grid .bracket-match-card { width: auto; }
+.card-round {
+  display: inline-block; align-self: flex-start;
+  background: #f0f2f5; color: #555; font-size: 11px; font-weight: bold;
+  text-transform: uppercase; letter-spacing: 0.03em;
+  padding: 2px 9px; border-radius: 999px; margin-bottom: 8px;
+}
+@media (max-width: 480px) {
+  .match-grid { grid-template-columns: 1fr; gap: 12px; }
+}
+
 .container { padding: 0 20px 30px; }
 
-/* ── Niveau 1 : Onglets tournois ────────────────────────────────────────── */
+/* ── Barre de contexte : tournoi + mode ─────────────────────────────────────── */
 
-.tournament-tabs {
+.toolbar {
   display: flex;
-  gap: 0;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
   background: white;
-  border-bottom: 2px solid #e0e0e0;
-  padding: 0 20px;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-}
-
-.tournament-tab {
-  background: none;
-  border: none;
-  color: #666;
+  border-bottom: 1px solid #e3e6ea;
   padding: 12px 20px;
+}
+.toolbar[hidden] { display: none !important; }
+
+.tournament-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #f0f2f5 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+  border: 1px solid #e3e6ea;
+  border-radius: 10px;
+  padding: 9px 34px 9px 14px;
   font-size: 14px;
   font-weight: bold;
+  color: #2a2f36;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
-  white-space: nowrap;
-  transition: all 0.2s;
-  border-radius: 0;
+  max-width: 280px;
 }
+.tournament-select:focus { outline: 2px solid #0c6b2f33; }
 
-.tournament-tab:hover  { color: #0c6b2f; background: #f9f9f9; }
-.tournament-tab.active { color: #0c6b2f; border-bottom-color: #0c6b2f; }
-
-.tournament-tab-empty {
-  padding: 12px 4px;
-  color: #999;
-  font-size: 14px;
+/* Segmented control Tableau / Match */
+.mode-toggle {
+  display: inline-flex;
+  background: #f0f2f5;
+  border-radius: 12px;
+  padding: 3px;
+  gap: 2px;
+  margin-left: auto;
 }
-.tournament-tab-empty a { color: #0c6b2f; }
-
-/* ── Niveau 2 : Onglets mode ────────────────────────────────────────────── */
-
-.mode-tabs {
-  display: flex;
-  gap: 0;
-  background: #1a1a2e;
-  padding: 0 20px;
-}
-
-.mode-tab {
+.mode-seg {
   background: none;
   border: none;
   color: #888;
-  padding: 11px 20px;
+  padding: 8px 16px;
   font-size: 13px;
   font-weight: bold;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  transition: all 0.2s;
-  border-radius: 0;
+  border-radius: 9px;
+}
+.mode-seg:hover  { color: #555; opacity: 1; }
+.mode-seg.active {
+  background: white;
+  color: #0c6b2f;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
-.mode-tab:hover  { color: #ccc; background: rgba(255,255,255,0.05); }
-.mode-tab.active { color: white; border-bottom-color: #4caf50; }
+/* ── Navigation principale (uniforme, actif en orange) ──────────────────────── */
 
-/* ── Sous-menu ───────────────────────────────────────────────────────────── */
-
-.menu {
+.mainnav {
   display: flex;
-  gap: 10px;
-  padding: 16px 0;
+  gap: 8px;
   flex-wrap: wrap;
   align-items: center;
+  padding: 14px 20px 4px;
+}
+.mainnav[hidden] { display: none !important; }
+
+.navbtn {
+  background: #f0f2f5;
+  color: #555;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.navbtn:hover  { background: #e6e9ee; opacity: 1; }
+.navbtn.active {
+  background: #f57c00;
+  color: white;
+  box-shadow: 0 2px 8px rgba(245,124,0,0.35);
 }
 
 /* ── Boutons ─────────────────────────────────────────────────────────────── */
@@ -123,6 +366,11 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .black  { background: #111;    color: white; }
 .blue   { background: #0277bd; color: white; }
 .orange { background: #f57c00; color: white; }
+
+/* Boutons harmonisés (accent orange = action principale, gris = secondaire) */
+.btn-primary { background: #f57c00; color: white; box-shadow: 0 2px 8px rgba(245,124,0,0.3); }
+.btn-ghost   { background: #f0f2f5; color: #444; }
+.btn-ghost:hover { background: #e6e9ee; opacity: 1; }
 
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 
@@ -148,27 +396,38 @@ input, textarea, select {
 
 /* ── Dashboard ───────────────────────────────────────────────────────────── */
 
+/* Titre de section (« Prono Tableau — Halle ») : de l'air autour */
+#content > h2:first-child { margin: 8px 0 20px; color: #1a2530; }
+
 .dashboard {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
+  gap: 22px;
+  margin-top: 8px;
 }
 
 .player-card {
   background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.09);
+  padding: 26px 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
   cursor: pointer;
   position: relative;
-  transition: transform 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.player-card:hover { transform: translateY(-2px); }
-.player-card h3    { margin: 0 0 8px; color: #0c6b2f; }
-.player-card-score { font-size: 26px; font-weight: bold; color: #111; margin: 8px 0; }
-.lock-badge        { position: absolute; top: 14px; right: 14px; font-size: 20px; }
+.player-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.10); }
+.player-card h3    { margin: 0 28px 10px 0; color: #1a2530; font-size: 1.05rem; }
+.player-card-score { font-size: 28px; font-weight: 800; color: #0c6b2f; margin: 6px 0 2px; }
+
+/* Pastille d'état en haut à droite (crayon / cadenas) → vrai bouton circulaire */
+.lock-badge {
+  position: absolute; top: 16px; right: 16px;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  background: #f0f2f5; border-radius: 50%; font-size: 15px;
+  box-shadow: inset 0 0 0 1px #e3e6ea;
+}
 
 .badge-pending { display:inline-block; margin-top:10px; padding:4px 10px; background:#fff3e0; color:#f57c00; border-radius:20px; font-size:12px; font-weight:bold; }
 .badge-done    { display:inline-block; margin-top:10px; padding:4px 10px; background:#e8f5e9; color:#0c6b2f; border-radius:20px; font-size:12px; font-weight:bold; }
@@ -179,6 +438,7 @@ input, textarea, select {
   display: flex;
   gap: 30px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   padding-bottom: 20px;
   align-items: stretch;
   margin-top: 20px;
@@ -277,6 +537,7 @@ input, textarea, select {
   display: flex;
   gap: 20px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 8px 4px 24px;
   align-items: flex-start;
 }
@@ -334,3 +595,41 @@ input, textarea, select {
   border-radius: 8px; font-size: 12px; border: 1px dashed #bbb;
 }
 .lock-match-btn:hover { background: #111; color: white; border-color: #111; }
+
+/* ── Barre de progression (cartes joueurs) ─────────────────────────────────── */
+
+.progress {
+  margin-top: 16px;
+  height: 10px;
+  border-radius: 999px;
+  background: #eceff1;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #66bb6a, #0c6b2f);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+.progress-fill.full { background: linear-gradient(90deg, #43a047, #1b5e20); }
+.progress-label {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #999;
+}
+
+/* ── Mobile-first ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  header { padding: 12px 14px; }
+  header h1 { font-size: 1.05rem; }
+  .container { padding: 0 12px; }
+  .toolbar { padding: 10px 12px; gap: 10px; }
+  .tournament-select { flex: 1; max-width: none; }
+  .mode-toggle { margin-left: 0; }
+  .mainnav { padding: 12px 12px 2px; gap: 6px; }
+  .navbtn { padding: 9px 14px; font-size: 13px; flex: 1; text-align: center; }
+  .dashboard { grid-template-columns: 1fr; gap: 16px; }
+  .player-card { padding: 20px; }
+}
+

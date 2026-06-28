@@ -1,4 +1,7 @@
-import { loadConfig, saveConfig, loadAllTournaments, loadTournament, saveTournament } from './firebase.js';
+import {
+  loadConfig, loadAllTournaments, loadTournament,
+  loadTableauPreds, saveMyTableauPred, loadMatchPreds, saveMyMatchPred,
+} from './firebase.js';
 
 const defaultRounds = [
   { name: 'Huitièmes',    matches: 8, points: 6  },
@@ -17,17 +20,27 @@ export const state = {
   currentTournamentId: null,
   tournamentName: '',
   tournamentList: [],
+  // Utilisateur connecté : { uid, name } | null
+  me: null,
   // Prono Tableau
   initialPlayers: [],
   rounds: [],
   officialResults: {},
-  tPlayers: [],     // participants tableau
+  tPlayers: [],     // participants tableau (chargés depuis la sous-collection)
   playerMeta: {},
   // Prono Match
   format: 'bo3',
   matches: [],
-  mPlayers: [],     // participants match
+  mPlayers: [],     // participants match (chargés depuis la sous-collection)
 };
+
+export function setMe(user) {
+  state.me = user ? { uid: user.uid, name: user.name } : null;
+}
+
+export function isMine(player) {
+  return !!state.me && !!player && player.uid === state.me.uid;
+}
 
 // UI state pour le rendu bracket (dimensions auto)
 export const uiState = {
@@ -50,45 +63,46 @@ export async function loadState() {
 }
 
 export async function switchTournament(id) {
-  const data = await loadTournament(id);
+  const [data, tableauPreds, matchPreds] = await Promise.all([
+    loadTournament(id),
+    loadTableauPreds(id),
+    loadMatchPreds(id),
+  ]);
   if (!data) return;
   state.currentTournamentId = id;
   state.tournamentName      = data.name || id;
-  // Tableau
+  // Données officielles (admin)
   state.initialPlayers  = data.rg_initialPlayers || Array(16).fill('').map((_, i) => `Joueur ${i + 1}`);
   state.rounds          = data.rg_rounds         || defaultRounds.map(r => ({ ...r }));
   state.officialResults = data.rg_results        || makeDefaultResults(state.rounds);
-  state.tPlayers        = data.rg_players        || [];
   state.playerMeta      = data.rg_playerMeta     || {};
-  // Match
   state.format   = data.pm_format  || 'bo3';
   state.matches  = data.pm_matches || [];
-  state.mPlayers = data.pm_players || [];
+  // Pronostics des joueurs (sous-collections, 1 doc par uid)
+  state.tPlayers = tableauPreds.map(d => ({ uid: d.uid, name: d.displayName || d.uid, predictions: d.predictions || {}, locked: !!d.locked, score: 0 }));
+  state.mPlayers = matchPreds.map(d => ({ uid: d.uid, name: d.displayName || d.uid, predictions: d.predictions || {}, score: 0 }));
   // Reset UI state
   uiState.measuredMatchHeight = 70;
   uiState.measuredRoundWidths = [];
   uiState.hiddenRounds = new Set();
-  saveConfig({ activeTournamentId: id }).catch(() => {});
 }
 
-export function saveTableau() {
-  if (!state.currentTournamentId) return;
-  saveTournament(state.currentTournamentId, {
-    name: state.tournamentName,
-    rg_initialPlayers: state.initialPlayers,
-    rg_rounds:         state.rounds,
-    rg_results:        state.officialResults,
-    rg_players:        state.tPlayers,
-    rg_playerMeta:     state.playerMeta,
+// Sauvegarde le bracket tableau de l'utilisateur courant (son doc uniquement).
+export function saveMyTableau(player) {
+  if (!state.currentTournamentId || !player || !player.uid) return;
+  saveMyTableauPred(state.currentTournamentId, player.uid, {
+    displayName: player.name,
+    predictions: player.predictions,
+    locked: !!player.locked,
   }).catch(console.error);
 }
 
-export function saveMatch() {
-  if (!state.currentTournamentId) return;
-  saveTournament(state.currentTournamentId, {
-    pm_format:  state.format,
-    pm_matches: state.matches,
-    pm_players: state.mPlayers,
+// Sauvegarde les pronos match de l'utilisateur courant (son doc uniquement).
+export function saveMyMatch(player) {
+  if (!state.currentTournamentId || !player || !player.uid) return;
+  saveMyMatchPred(state.currentTournamentId, player.uid, {
+    displayName: player.name,
+    predictions: player.predictions,
   }).catch(console.error);
 }
 

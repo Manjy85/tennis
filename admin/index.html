@@ -8,7 +8,12 @@
 </head>
 <body>
 
-<div class="admin-layout">
+<!-- Écran de connexion admin (affiché tant que non connecté) -->
+<div id="admin-gate" class="admin-gate" hidden>
+  <div class="admin-gate-card" id="admin-gate-card"></div>
+</div>
+
+<div class="admin-layout" id="admin-layout" hidden>
 
   <!-- Sidebar -->
   <aside class="sidebar">
@@ -19,7 +24,13 @@
 
     <nav class="sidebar-nav">
       <button onclick="showTab('tournois')" id="tab-tournois">🏆 Tournois</button>
+      <button onclick="showTab('compte')"  id="tab-compte">🔐 Compte admin</button>
     </nav>
+
+    <div class="sidebar-foot">
+      <span class="sidebar-user" id="adminUserLabel">—</span>
+      <button class="btn-red" onclick="adminLogout()">Déconnexion</button>
+    </div>
   </aside>
 
   <!-- Main content -->

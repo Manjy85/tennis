@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// Modèle de sécurité :
+// - Lecture publique (classements/dashboards visibles sans compte).
+// - Les pronostics joueurs vivent dans tournaments/{tid}/tableauPreds/{uid} et
+//   tournaments/{tid}/matchPreds/{uid} : chaque utilisateur n'écrit QUE le doc
+//   dont l'id == son uid → propriété infalsifiable côté serveur.
+// - Les données officielles (doc tournaments/{tid}, collection app/) ne sont
+//   modifiables que par un admin (uid listé dans app/admins.uids).
+//
+// ⚠️ Avant de déployer : l'app admin (dossier admin/) doit être authentifiée
+// avec un compte admin, sinon ses écritures de résultats seront refusées.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/app/admins)
+        && request.auth.uid in get(/databases/$(database)/documents/app/admins).data.uids;
+    }
+
+    // Bootstrap : tant qu'aucun admin n'existe, un utilisateur authentifié peut
+    // créer le 1er compte admin (app/admins + app/adminConfig). Ensuite, admin only.
+    function noAdminYet() {
+      return !exists(/databases/$(database)/documents/app/admins);
+    }
+
+    match /app/{doc} {
+      allow read: if true;
+      allow write: if isAdmin() || (request.auth != null && noAdminYet());
+    }
+
+    match /tournaments/{tid} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /tableauPreds/{uid} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /matchPreds/{uid} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }
+}

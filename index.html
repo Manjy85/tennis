@@ -11,23 +11,24 @@
 <!-- Barre de titre -->
 <header>
   <h1>🎾 Tennis Pronostics</h1>
-  <a href="admin/" class="header-admin-link">⚙️ Admin</a>
+  <div class="header-right">
+    <div id="auth-zone" class="auth-zone"></div>
+  </div>
 </header>
 
-<!-- Niveau 1 : Onglets tournois -->
-<div class="tournament-tabs" id="tournament-tabs">
-  <!-- populé dynamiquement -->
+<!-- Modale d'authentification (peuplée dynamiquement) -->
+<div id="auth-modal" class="auth-modal" hidden>
+  <div class="auth-modal-backdrop" onclick="closeAuthModal()"></div>
+  <div class="auth-modal-card" id="auth-modal-card"></div>
 </div>
 
-<!-- Niveau 2 : Onglets mode -->
-<div class="mode-tabs" id="mode-tabs">
-  <button id="mode-tab-tableau" class="mode-tab active" onclick="switchMode('tableau')">🏆 Prono Tableau</button>
-  <button id="mode-tab-match"   class="mode-tab"        onclick="switchMode('match')">🎾 Prono Match</button>
-</div>
+<!-- Barre de navigation principale -->
+<nav class="mainnav" id="mainnav" hidden>
+  <button id="nav-home"   class="navbtn active" onclick="goHome()">🏆 Classement</button>
+  <button id="nav-pronos" class="navbtn"        onclick="goMesPronos()">🎯 Mes Pronostics</button>
+</nav>
 
-<!-- Sous-menu contextuel -->
 <div class="container">
-  <div class="menu" id="submenu"></div>
   <div id="content"></div>
 </div>
 

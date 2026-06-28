@@ -1,4 +1,4 @@
-import { loadConfig, saveConfig, loadAllTournaments, loadTournament, saveTournament } from './firebase.js';
+import { loadConfig, saveConfig, loadAllTournaments, loadTournament, saveTournament, loadTableauPreds, loadMatchPreds } from './firebase.js';
 
 const defaultRounds = [
   { name: 'Huitiemes',  matches: 8, points: 6  },
@@ -21,6 +21,9 @@ export const state = {
   format: 'bo3',
   matches: [],
   pm_players: [],
+  // Pronostics des utilisateurs (sous-collections)
+  tableauPreds: [],
+  matchPreds: [],
 };
 
 export async function loadState() {
@@ -58,6 +61,10 @@ export async function switchTournament(id) {
   state.format     = data.pm_format  || 'bo3';
   state.matches    = data.pm_matches || [];
   state.pm_players = data.pm_players || [];
+  // Pronostics réels des utilisateurs (sous-collections)
+  const [tp, mp] = await Promise.all([loadTableauPreds(id), loadMatchPreds(id)]);
+  state.tableauPreds = tp;
+  state.matchPreds = mp;
   saveConfig({ activeTournamentId: id }).catch(() => {});
 }
 
