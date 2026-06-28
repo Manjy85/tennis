@@ -8,7 +8,12 @@
 </head>
 <body>
 
-<div class="admin-layout">
+<!-- Écran de connexion admin (affiché tant que non connecté) -->
+<div id="admin-gate" class="admin-gate" hidden>
+  <div class="admin-gate-card" id="admin-gate-card"></div>
+</div>
+
+<div class="admin-layout" id="admin-layout" hidden>
 
   <!-- Sidebar -->
   <aside class="sidebar">
@@ -18,22 +23,13 @@
     </div>
 
     <nav class="sidebar-nav">
-      <div class="nav-section-label">Général</div>
-      <button onclick="showTab('tournois')"   id="tab-tournois">🏆 Tournois</button>
-      <button onclick="showTab('config')"     id="tab-config">⚙️ Configuration</button>
-
-      <div class="nav-section-label">Prono Tableau</div>
-      <button onclick="showTab('joueurs')"    id="tab-joueurs">👥 Joueurs & Têtes</button>
-      <button onclick="showTab('res-tableau')" id="tab-res-tableau">🛠️ Résultats</button>
-
-      <div class="nav-section-label">Prono Match</div>
-      <button onclick="showTab('matchs')"     id="tab-matchs">🎾 Matchs</button>
-      <button onclick="showTab('res-matchs')" id="tab-res-matchs">🛠️ Résultats</button>
+      <button onclick="showTab('tournois')" id="tab-tournois">🏆 Tournois</button>
+      <button onclick="showTab('compte')"  id="tab-compte">🔐 Compte admin</button>
     </nav>
 
-    <div class="sidebar-tournament">
-      <div class="sidebar-tournament-label">Tournoi actif</div>
-      <div class="sidebar-tournament-name" id="tournamentLabel">—</div>
+    <div class="sidebar-foot">
+      <span class="sidebar-user" id="adminUserLabel">—</span>
+      <button class="btn-red" onclick="adminLogout()">Déconnexion</button>
     </div>
   </aside>
 
