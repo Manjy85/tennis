@@ -164,28 +164,28 @@ async function syncWikipedia(db, tournamentId, name, page) {
       if (!m.result && (outgoing.has(m.player1) || outgoing.has(m.player2))) affectedIds.add(m.id);
     });
 
-    // Réouverture des branches chez chaque pronostiqueur tableau.
-    const realChanges = changes.filter(c => !c.reveal);
-    if (realChanges.length > 0) {
-      const tPredsSnap = await ref.collection('tableauPreds').get();
-      for (const doc of tPredsSnap.docs) {
-        const pred = doc.data();
-        let touched = false;
-        realChanges.forEach(c => { if (reopenBranch(pred, rounds, c)) touched = true; });
-        if (touched) {
-          await doc.ref.set({ predictions: pred.predictions, reopened: pred.reopened }, { merge: true });
-          reopenedCount++;
-        }
+    // Réouverture des branches chez chaque pronostiqueur tableau — y compris
+    // pour les révélations (slot vide qui se remplit) : le match du 1er tour
+    // doit redevenir remplissable sur un tableau verrouillé (reopenBranch ne
+    // supprime aucun pick dans ce cas, il ne fait que rouvrir le slot).
+    const tPredsSnap = await ref.collection('tableauPreds').get();
+    for (const doc of tPredsSnap.docs) {
+      const pred = doc.data();
+      let touched = false;
+      changes.forEach(c => { if (reopenBranch(pred, rounds, c)) touched = true; });
+      if (touched) {
+        await doc.ref.set({ predictions: pred.predictions, reopened: pred.reopened }, { merge: true });
+        reopenedCount++;
       }
-      // Remise à zéro des pronos match posés sur les affiches modifiées.
-      const mPredsSnap = await ref.collection('matchPreds').get();
-      for (const doc of mPredsSnap.docs) {
-        const pred = doc.data();
-        const predictions = pred.predictions || {};
-        let touched = false;
-        affectedIds.forEach(id => { if (predictions[id]) { predictions[id] = {}; touched = true; } });
-        if (touched) await doc.ref.set({ predictions }, { merge: true });
-      }
+    }
+    // Remise à zéro des pronos match posés sur les affiches modifiées.
+    const mPredsSnap = await ref.collection('matchPreds').get();
+    for (const doc of mPredsSnap.docs) {
+      const pred = doc.data();
+      const predictions = pred.predictions || {};
+      let touched = false;
+      affectedIds.forEach(id => { if (predictions[id]) { predictions[id] = {}; touched = true; } });
+      if (touched) await doc.ref.set({ predictions }, { merge: true });
     }
 
     await ref.set({
@@ -223,13 +223,15 @@ async function syncWikipedia(db, tournamentId, name, page) {
   })) };
   const rebuilt = buildBracketData(mergedDraw);
 
-  if (added === 0) {
+  // Après un remplacement, pm_matches doit être réécrit même sans nouveau
+  // résultat : les affiches contiennent les noms des joueurs.
+  if (added === 0 && changes.length === 0) {
     console.log(`  [inchangé] aucun nouveau résultat.`);
     return;
   }
 
   await ref.set({ rg_results: mergedResults, pm_matches: rebuilt.pmMatches }, { merge: true });
-  console.log(`  [mis à jour] ${added} nouveau(x) résultat(s).`);
+  console.log(`  [mis à jour] ${added} nouveau(x) résultat(s)${changes.length ? ', affiches pm_matches resynchronisées' : ''}.`);
 }
 
 // ── Mode RapidAPI : Prono Match uniquement ──────────────────────────────────

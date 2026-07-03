@@ -65,6 +65,12 @@ function fmtCountdown(ms) {
 
 let syncTimerInterval = null;
 
+// Le journal peut contenir des textes issus de services externes (réponses
+// d'erreur Wikipedia/RapidAPI) : à échapper avant toute insertion en innerHTML.
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 async function renderSyncStatus() {
   const box = document.getElementById('sync-status-box');
   if (!box) return;
@@ -82,7 +88,7 @@ async function renderSyncStatus() {
 
   const logHtml = status && status.log && status.log.length
     ? `<details style="margin-top:8px;"><summary style="cursor:pointer; color:#0c6b2f; font-size:13px;">Journal du dernier passage</summary>
-        <pre style="font-size:12px; background:#f6f8f7; border-radius:8px; padding:10px; overflow-x:auto; margin:8px 0 0;">${status.log.join('\n')}</pre>
+        <pre style="font-size:12px; background:#f6f8f7; border-radius:8px; padding:10px; overflow-x:auto; margin:8px 0 0;">${escapeHtml(status.log.join('\n'))}</pre>
       </details>`
     : '';
 

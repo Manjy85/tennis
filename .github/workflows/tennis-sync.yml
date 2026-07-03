@@ -17,11 +17,13 @@ jobs:
 
       - name: Install dependencies
         working-directory: scripts
-        run: npm install
+        run: npm ci
 
       - name: Write service account key
         working-directory: scripts
-        run: echo "$FIREBASE_SERVICE_ACCOUNT" > serviceAccountKey.json
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > serviceAccountKey.json
+          chmod 600 serviceAccountKey.json
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
