@@ -85,8 +85,13 @@ async function showClassement() {
     const initialPlayers = doc.rg_initialPlayers || [];
     const matches = doc.pm_matches || [];
 
+    const iAmIn = state.me && (tPreds.some(p => p.uid === state.me.uid) || mPreds.some(p => p.uid === state.me.uid));
     html += `<section class="ranking-block">
-      <h3 class="ranking-title">🎾 ${t.name}</h3>`;
+      <div class="ranking-title-row">
+        <h3 class="ranking-title">🎾 ${t.name}</h3>
+        ${state.me && !iAmIn ? `<button class="btn-join-small" onclick="joinFromRanking('${t.id}')">🙋 Participer</button>` : ''}
+        ${iAmIn ? `<span class="participating-tag">✓ Tu participes</span>` : ''}
+      </div>`;
 
     // ── Table Tableau (détail par round + Max) ──
     const tRows = tPreds.map(p => {
@@ -146,15 +151,18 @@ async function showClassement() {
 
     html += `</section>`;
 
-    // Comptage des pronostics restants de l'utilisateur (pour le bandeau).
+    // Comptage des pronostics restants de l'utilisateur (pour le bandeau) —
+    // uniquement dans les tournois auxquels il participe.
     if (state.me) {
       const myT = tPreds.find(p => p.uid === state.me.uid);
-      const tTotal = rounds.reduce((a, r) => a + r.matches, 0);
-      const tFilled = myT ? Object.values(myT.predictions || {}).flat().filter(Boolean).length : 0;
-      myRemaining += Math.max(0, tTotal - tFilled);
       const myM = mPreds.find(p => p.uid === state.me.uid);
-      const mLocked = myM ? Object.values(myM.predictions || {}).filter(x => x && x.locked).length : 0;
-      myRemaining += Math.max(0, matches.length - mLocked);
+      if (myT || myM) {
+        const tTotal = rounds.reduce((a, r) => a + r.matches, 0);
+        const tFilled = myT ? Object.values(myT.predictions || {}).flat().filter(Boolean).length : 0;
+        if (myT) myRemaining += Math.max(0, tTotal - tFilled);
+        const mLocked = myM ? Object.values(myM.predictions || {}).filter(x => x && x.locked).length : 0;
+        if (myM) myRemaining += Math.max(0, matches.length - mLocked);
+      }
     }
   });
 
@@ -175,20 +183,42 @@ async function showClassement() {
 
 // ── Mes Pronostics : sélecteur tournoi + 3 sous-onglets ─────────────────────
 
+// Participe-t-il déjà à ce tournoi ? (un doc de pronostic existe)
+function isParticipating() {
+  if (!state.me) return false;
+  return state.tPlayers.some(p => p.uid === state.me.uid) || state.mPlayers.some(p => p.uid === state.me.uid);
+}
+
 function showMesPronos() {
   const content = document.getElementById('content');
   if (!state.currentTournamentId) {
     content.innerHTML = `<p style="color:#888; padding:24px;">Aucun tournoi disponible.</p>`;
     return;
   }
-  ensureMyTableau();
-  ensureMyMatch();
 
   const selector = state.tournamentList.length > 1
     ? `<select class="tournament-select" onchange="pronosSwitchTournament(this.value)">
         ${state.tournamentList.map(t => `<option value="${t.id}" ${t.id === state.currentTournamentId ? 'selected' : ''}>${t.name}</option>`).join('')}
        </select>`
     : `<span class="tournament-name">🎾 ${state.tournamentName}</span>`;
+
+  // Participation explicite : consulter un tournoi n'inscrit pas — on ne crée
+  // les docs de pronostic qu'au clic sur "Je participe".
+  if (!isParticipating()) {
+    content.innerHTML = `
+      <div class="pronos-head">
+        <h2>Mes Pronostics</h2>
+        ${selector}
+      </div>
+      <div class="join-card">
+        <div class="join-emoji">🎾</div>
+        <h3>${state.tournamentName}</h3>
+        <p>Tu ne participes pas encore à ce tournoi.<br>
+        Rejoins-le pour remplir ton tableau et pronostiquer les matchs — tu choisis librement les tournois auxquels tu participes.</p>
+        <button class="btn-primary" onclick="joinTournament()">🙋 Je participe à ce tournoi</button>
+      </div>`;
+    return;
+  }
 
   content.innerHTML = `
     <div class="pronos-head">
@@ -204,6 +234,24 @@ function showMesPronos() {
 
   renderPronosBody();
 }
+
+window.joinTournament = () => {
+  if (!state.me) return window.requireLogin();
+  ensureMyTableau();
+  ensureMyMatch();
+  showMesPronos();
+};
+
+// Rejoindre un tournoi depuis la page Classement : bascule dessus puis ouvre
+// directement "Mes Pronostics" avec la carte de participation validée.
+window.joinFromRanking = async (id) => {
+  if (!state.me) return window.requireLogin();
+  if (id !== state.currentTournamentId) await switchTournament(id);
+  ensureMyTableau();
+  ensureMyMatch();
+  setActiveNav('pronos');
+  showMesPronos();
+};
 
 function renderPronosBody() {
   const uid = state.me.uid;

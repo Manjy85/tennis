@@ -30,7 +30,7 @@ export function ensureMyTableau() {
   if (!state.me || !state.currentTournamentId) return null;
   let player = state.tPlayers.find(p => p.uid === state.me.uid);
   if (!player) {
-    player = { uid: state.me.uid, name: state.me.name, score: 0, locked: false, predictions: {} };
+    player = { uid: state.me.uid, name: state.me.name, score: 0, locked: false, reopened: [], predictions: {} };
     state.rounds.forEach((r, i) => { player.predictions[`round${i}`] = Array(r.matches).fill(null); });
     state.tPlayers.push(player);
     saveMyTableau(player);
@@ -59,16 +59,34 @@ export function lockBracket(uid) {
   showBracket(uid, bracketCtx);
 }
 
+// Un slot rouvert (remplacement de joueur : lucky loser...) reste éditable
+// malgré le verrou, tant que le résultat officiel du match n'est pas connu.
+export function isSlotReopened(player, roundIndex, matchIndex) {
+  if (!(player.reopened || []).includes(`r${roundIndex}_m${matchIndex}`)) return false;
+  const off = (state.officialResults[`round${roundIndex}`] || [])[matchIndex];
+  return off === null || off === undefined;
+}
+
 export function selectWinner(uid, roundIndex, matchIndex, winner) {
   const player = state.tPlayers.find(p => p.uid === uid);
   if (!player || !isMine(player)) return;
-  if (player.locked) return alert('Ton tableau est verrouillé !');
+  if (player.locked && !isSlotReopened(player, roundIndex, matchIndex)) {
+    return alert('Ton tableau est verrouillé !');
+  }
   const old = player.predictions[`round${roundIndex}`][matchIndex];
   player.predictions[`round${roundIndex}`][matchIndex] = winner;
   if (old && old !== winner) {
     for (let r = roundIndex + 1; r < state.rounds.length; r++) {
       const mi = Math.floor(matchIndex / Math.pow(2, r - roundIndex));
-      if (player.predictions[`round${r}`][mi] === old) player.predictions[`round${r}`][mi] = null;
+      if (player.predictions[`round${r}`][mi] === old) {
+        player.predictions[`round${r}`][mi] = null;
+        // Sur un tableau verrouillé, un slot vidé en cascade depuis un slot
+        // rouvert doit rester remplissable : on le rouvre aussi.
+        if (player.locked) {
+          player.reopened = player.reopened || [];
+          if (!player.reopened.includes(`r${r}_m${mi}`)) player.reopened.push(`r${r}_m${mi}`);
+        }
+      }
     }
   }
   saveMyTableau(player);
@@ -104,8 +122,22 @@ export function showBracket(uid, containerId = 'content') {
   if (!isMine(player)) html += `<span style="color:#888; font-weight:bold;" title="Tableau d'un autre joueur — lecture seule">👁️ Lecture seule</span>`;
   else if (!player.locked) html += `<button class="red" title="Verrouille définitivement ton tableau : plus aucune modification possible ensuite" onclick="lockBracket('${player.uid}')">🔒 Verrouiller</button>`;
   else html += `<span style="color:#0c6b2f; font-weight:bold;" title="Tableau verrouillé — modification impossible">🔒 Verrouillé</span>`;
-  html += `</div>
-    <div class="bracket" style="min-height:${minH}px; --match-height:${H}px;">`;
+  html += `</div>`;
+
+  // Bandeau : des slots ont été rouverts suite à un changement de joueur
+  // (lucky loser...) et attendent un nouveau pronostic.
+  if (isMine(player)) {
+    const pending = (player.reopened || []).filter(key => {
+      const m = key.match(/^r(\d+)_m(\d+)$/);
+      return m && isSlotReopened(player, parseInt(m[1], 10), parseInt(m[2], 10));
+    });
+    if (pending.length > 0) {
+      html += `<div class="reopened-banner">🔁 <strong>Changement de joueur dans le tableau !</strong>
+        ${pending.length} match${pending.length > 1 ? 's ont été rouverts' : ' a été rouvert'} pour toi (surligné${pending.length > 1 ? 's' : ''} en orange) — tu peux repronostiquer cette branche même si ton tableau est verrouillé.</div>`;
+    }
+  }
+
+  html += `<div class="bracket" style="min-height:${minH}px; --match-height:${H}px;">`;
 
   state.rounds.forEach((round, ri) => {
     const roundPlayers = ri === 0 ? state.initialPlayers : (player.predictions[`round${ri - 1}`] || []);
@@ -128,10 +160,13 @@ export function showBracket(uid, containerId = 'content') {
     for (let i = 0; i < round.matches; i++) {
       const p1 = roundPlayers[i * 2];
       const p2 = roundPlayers[i * 2 + 1];
+      // Slot rouvert (changement de joueur) : éditable malgré le verrou.
+      const reopenedSlot = isMine(player) && isSlotReopened(player, ri, i);
+      const slotEditable = editable || reopenedSlot;
       if (!p1 && !p2) {
         html += `<div class="match empty"><span style="color:#aaa;">En attente...</span></div>`;
       } else {
-        html += `<div class="match">`;
+        html += `<div class="match${reopenedSlot ? ' reopened' : ''}">`;
         [p1, p2].forEach(p => {
           if (!p) return;
           const meta  = getPlayerMetaParts(p);
@@ -140,7 +175,7 @@ export function showBracket(uid, containerId = 'content') {
           const off   = (state.officialResults[`round${ri}`] || [])[i];
           let cls = 'player-btn' + (sel ? ' selected' : '');
           if (sel && off !== null && off !== undefined) cls += (off === p ? ' correct' : ' incorrect');
-          html += `<button class="${cls}" onclick="selectWinner('${player.uid}',${ri},${i},'${p.replace(/'/g,"\\'")}')" ${editable ? '' : 'disabled'}>
+          html += `<button class="${cls}" onclick="selectWinner('${player.uid}',${ri},${i},'${p.replace(/'/g,"\\'")}')" ${slotEditable ? '' : 'disabled'}>
             <span class="player-label">
               <span class="player-seed">${meta.seed}</span>
               <span class="player-name"><span>${parts.lastName}</span><span>${parts.firstName}</span></span>

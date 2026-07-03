@@ -1,5 +1,5 @@
 import { state, loadState, switchTournament, createTournament, saveTableau, savePmMatch, ensurePlayerMeta, syncMatchesFromBracket } from './state.js';
-import { deleteTournament, deleteTableauPred, deleteMatchPred } from './firebase.js';
+import { deleteTournament, deleteTableauPred, deleteMatchPred, loadSyncStatus } from './firebase.js';
 import {
   onAuth, currentUser, getUsername, adminConfigExists, initAdmin, login, logout,
   changeUsername, changePassword, authErrorMessage, isAdminAccount,
@@ -45,10 +45,79 @@ function backLink() {
     onclick="event.preventDefault(); showTab('tournois');">← Retour aux tournois</a>`;
 }
 
+// ── Synchronisation automatique : statut + compte à rebours ────────────────
+
+// Le cron GitHub Actions tourne toutes les 4h aux heures UTC fixes (0h, 4h...).
+function nextSyncDate() {
+  const now = new Date();
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+    (Math.floor(now.getUTCHours() / 4) + 1) * 4, 0, 0));
+  return next;
+}
+
+function fmtCountdown(ms) {
+  if (ms <= 0) return 'imminente';
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return h > 0 ? `${h}h ${String(m).padStart(2, '0')}min` : m > 0 ? `${m}min ${String(s).padStart(2, '0')}s` : `${s}s`;
+}
+
+let syncTimerInterval = null;
+
+async function renderSyncStatus() {
+  const box = document.getElementById('sync-status-box');
+  if (!box) return;
+  const status = await loadSyncStatus().catch(() => null);
+
+  let lastHtml;
+  if (status && status.lastRunAt) {
+    const last = new Date(status.lastRunAt);
+    const ago = Date.now() - last.getTime();
+    const agoTxt = ago < 3600000 ? `il y a ${Math.max(1, Math.floor(ago / 60000))} min` : `il y a ${Math.floor(ago / 3600000)}h${String(Math.floor((ago % 3600000) / 60000)).padStart(2, '0')}`;
+    lastHtml = `Dernière synchro : <strong>${agoTxt}</strong> <span style="color:#888;">(${last.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })})</span>`;
+  } else {
+    lastHtml = `<span style="color:#b71c1c;">Aucune synchro enregistrée pour l'instant</span> <span style="color:#888;">(le workflow GitHub n'a pas encore tourné)</span>`;
+  }
+
+  const logHtml = status && status.log && status.log.length
+    ? `<details style="margin-top:8px;"><summary style="cursor:pointer; color:#0c6b2f; font-size:13px;">Journal du dernier passage</summary>
+        <pre style="font-size:12px; background:#f6f8f7; border-radius:8px; padding:10px; overflow-x:auto; margin:8px 0 0;">${status.log.join('\n')}</pre>
+      </details>`
+    : '';
+
+  // Rendu complet une seule fois ; seul le compte à rebours est rafraîchi
+  // chaque seconde (sinon le <details> ouvert se refermerait à chaque tick).
+  box.innerHTML = `<h3>🔄 Synchronisation automatique</h3>
+    <p style="margin:6px 0;">${lastHtml}</p>
+    <p style="margin:6px 0;">Prochaine synchro : <strong style="color:#0c6b2f;">dans <span id="sync-countdown">…</span></strong>
+      <span style="color:#888;" id="sync-next-at"></span></p>
+    ${logHtml}`;
+
+  const tick = () => {
+    const cd = document.getElementById('sync-countdown');
+    if (!cd) { clearInterval(syncTimerInterval); syncTimerInterval = null; return; }
+    const next = nextSyncDate();
+    cd.textContent = fmtCountdown(next - Date.now());
+    const at = document.getElementById('sync-next-at');
+    if (at) at.textContent = `(vers ${next.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, toutes les 4h)`;
+  };
+
+  if (syncTimerInterval) clearInterval(syncTimerInterval);
+  tick();
+  syncTimerInterval = setInterval(tick, 1000);
+}
+
 // ── Tournois (hub) ───────────────────────────────────────────────────────────
 
 function buildTournois() {
   let html = `<h2 class="page-title">🏆 Tournois</h2>`;
+
+  html += `<div class="box" id="sync-status-box">
+    <h3>🔄 Synchronisation automatique</h3>
+    <p style="color:#888; margin:4px 0;">Chargement du statut...</p>
+  </div>`;
+  queueMicrotask(renderSyncStatus);
 
   html += `<div class="box">
     <h3>Créer un tournoi</h3>

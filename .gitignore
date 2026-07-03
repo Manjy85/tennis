@@ -1,1 +1,4 @@
 .firebase/
+scripts/node_modules/
+scripts/serviceAccountKey.json
+

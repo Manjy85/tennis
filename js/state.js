@@ -79,7 +79,7 @@ export async function switchTournament(id) {
   state.format   = data.pm_format  || 'bo3';
   state.matches  = data.pm_matches || [];
   // Pronostics des joueurs (sous-collections, 1 doc par uid)
-  state.tPlayers = tableauPreds.map(d => ({ uid: d.uid, name: d.displayName || d.uid, predictions: d.predictions || {}, locked: !!d.locked, score: 0 }));
+  state.tPlayers = tableauPreds.map(d => ({ uid: d.uid, name: d.displayName || d.uid, predictions: d.predictions || {}, locked: !!d.locked, reopened: d.reopened || [], score: 0 }));
   state.mPlayers = matchPreds.map(d => ({ uid: d.uid, name: d.displayName || d.uid, predictions: d.predictions || {}, score: 0 }));
   // Reset UI state
   uiState.measuredMatchHeight = 70;
@@ -94,6 +94,7 @@ export function saveMyTableau(player) {
     displayName: player.name,
     predictions: player.predictions,
     locked: !!player.locked,
+    reopened: player.reopened || [],
   }).catch(console.error);
 }
 

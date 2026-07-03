@@ -17,6 +17,7 @@ export const app = initializeApp(firebaseConfig, 'admin');
 export const db = getFirestore(app);
 
 export const loadConfig       = async () => { const s = await getDoc(doc(db, 'app', 'config')); return s.exists() ? s.data() : {}; };
+export const loadSyncStatus   = async () => { const s = await getDoc(doc(db, 'app', 'syncStatus')); return s.exists() ? s.data() : null; };
 export const saveConfig       = (data) => setDoc(doc(db, 'app', 'config'), data, { merge: true });
 
 // Compte admin (façade username) + liste des uids admins pour les règles
