@@ -1,0 +1,34 @@
+name: Sync tennis draws & results
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'   # toutes les 4h
+  workflow_dispatch: {}      # bouton "Run workflow" manuel dans l'onglet Actions
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: npm ci
+
+      - name: Write service account key
+        working-directory: scripts
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > serviceAccountKey.json
+          chmod 600 serviceAccountKey.json
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Sync tracked tournaments
+        working-directory: scripts
+        run: node sync.js
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
