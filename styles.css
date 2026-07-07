@@ -259,6 +259,14 @@ header h1 { margin: 0; font-size: 1.3rem; }
 .recap-cell.faint { opacity: 0.55; }
 .recap-cell.faint .recap-row { background: #f2f4f7; }
 
+/* Ligne « résultat officiel » sous les deux joueurs d'une cellule du récap */
+.recap-result {
+  font-size: 11px; color: #555; background: #f2f4f7;
+  padding: 3px 8px; border-radius: 6px; margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.recap-result.exact { color: #0c6b2f; background: #e8f5e9; font-weight: bold; }
+
 /* ── Matchs restants : grille de cartes (style feed) ───────────────────────── */
 
 .match-grid {

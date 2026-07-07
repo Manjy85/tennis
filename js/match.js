@@ -168,10 +168,38 @@ function recapRow(side, name, pred, result) {
   return `<div class="${cls}"><span class="player-name">${name}</span><span class="rscore">${recapSetScore(side, pred, result)}</span></div>`;
 }
 
+// Ligne « résultat officiel » sous les deux joueurs d'une cellule.
+//  - score exact pronostiqué → badge seul (inutile de répéter le même score)
+//  - sinon → vainqueur + score réels, avec les points gagnés si on avait pronostiqué
+function recapResultLine(p1, p2, pred, result) {
+  if (!result) return '';
+  const wName = result.winner === 'player1' ? p1 : p2;
+  const hasPred = !!(pred.winner && pred.score);
+  if (hasPred && pred.winner === result.winner && pred.score === result.score) {
+    return `<div class="recap-result exact">✅ Score exact +3</div>`;
+  }
+  let pts = '';
+  if (hasPred || pred.winner) {
+    pts = pred.winner === result.winner ? ' · 🟡 +1' : ' · ❌ 0';
+  }
+  return `<div class="recap-result">✔ ${wName} ${result.score}${pts}</div>`;
+}
+
 // Hauteur de cellule mesurée dynamiquement (comme le Tableau), pour ne rien rogner.
 let recapMatchH = 78;
 
+// Tours masqués dans le Récap (indépendant du Tableau) + contexte de re-render.
+const recapHiddenRounds = new Set();
+let recapCtx = { uid: null, containerId: 'content' };
+
+export function toggleRecapRound(roundIndex) {
+  if (recapHiddenRounds.has(roundIndex)) recapHiddenRounds.delete(roundIndex);
+  else recapHiddenRounds.add(roundIndex);
+  showRecap(recapCtx.uid, recapCtx.containerId);
+}
+
 export function showRecap(uid, containerId = 'content') {
+  recapCtx = { uid, containerId };
   const player = state.mPlayers.find(p => p.uid === uid);
   if (!player) return;
   const target = document.getElementById(containerId);
@@ -182,8 +210,13 @@ export function showRecap(uid, containerId = 'content') {
     return;
   }
 
+  let firstVisible = 0;
+  while (recapHiddenRounds.has(firstVisible) && firstVisible < rounds.length) firstVisible++;
+
   const H = recapMatchH;
-  const minH = Math.max(420, (rounds[0]?.matches || 1) * 2 * 45);
+  const minH = recapHiddenRounds.size === 0
+    ? Math.max(420, (rounds[0]?.matches || 1) * 2 * 45)
+    : Math.max(320, (rounds[firstVisible]?.matches || 1) * 2 * 45);
   let html = `<div class="bracket recap-bracket" style="min-height:${minH}px; --match-height:${H}px;">`;
 
   rounds.forEach((round, ri) => {
@@ -194,14 +227,20 @@ export function showRecap(uid, containerId = 'content') {
       ? (state.initialPlayers || [])
       : (state.officialResults[`round${ri - 1}`] || []);
 
-    const baseGap = 16;
+    const isCollapsed = recapHiddenRounds.has(ri);
+    const visIdx = Math.max(0, ri - firstVisible);
+    const baseGap = Math.max(8, Math.round(16 * (recapHiddenRounds.size > 0 ? 0.7 : 1)));
     const step = H + baseGap;
-    const roundGap = Math.pow(2, ri) * step - H;
-    const roundOffset = ((Math.pow(2, ri) - 1) * step) / 2;
+    const roundGap = Math.pow(2, visIdx) * step - H;
+    const roundOffset = ((Math.pow(2, visIdx) - 1) * step) / 2;
     const roundWidth = 210; // largeur fixe : laisse la place au nom + score étroit
 
-    html += `<div class="round" style="--match-width:${roundWidth}px;">
-      <div class="round-header"><h2>${round.name}</h2></div>
+    html += `<div class="round ${isCollapsed ? 'collapsed' : ''}" style="--match-width:${roundWidth}px;">
+      <div class="vertical-title" onclick="toggleRecapRound(${ri})">${round.name}</div>
+      <div class="round-header">
+        <h2>${round.name}</h2>
+        <button class="toggle-btn" onclick="toggleRecapRound(${ri})">👁️ Masquer</button>
+      </div>
       <div class="match-container" style="--round-gap:${roundGap}px; --round-offset:${roundOffset}px;">`;
 
     for (let i = 0; i < round.matches; i++) {
@@ -218,6 +257,7 @@ export function showRecap(uid, containerId = 'content') {
       html += `<div class="match recap-cell ${has ? '' : 'faint'}">
         ${recapRow('player1', p1, pred, result)}
         ${recapRow('player2', p2, pred, result)}
+        ${recapResultLine(p1, p2, pred, result)}
       </div>`;
     }
     html += `</div></div>`;

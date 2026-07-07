@@ -2,7 +2,7 @@ import { state, loadState, switchTournament, setMe } from './state.js';
 import { loadTournament, loadTableauPreds, loadMatchPreds } from './firebase.js';
 import { tabRoundScores, tabScore, tabMax, matchStats } from './ranking.js';
 import { ensureMyTableau, showBracket, selectWinner, lockBracket, toggleRound } from './tableau.js';
-import { ensureMyMatch, showMatchsRestants, showRecap, pickWinner, pickScore, lockMatch } from './match.js';
+import { ensureMyMatch, showMatchsRestants, showRecap, toggleRecapRound, pickWinner, pickScore, lockMatch } from './match.js';
 import {
   onAuth, displayNameOf, signUpEmail, signInEmail, signInGoogle, logout, authErrorMessage,
 } from './auth.js';
@@ -357,6 +357,7 @@ window.showBracket  = showBracket;
 window.selectWinner = selectWinner;
 window.lockBracket  = lockBracket;
 window.toggleRound  = toggleRound;
+window.toggleRecapRound = toggleRecapRound;
 window.pickWinner   = pickWinner;
 window.pickScore    = pickScore;
 window.lockMatch    = lockMatch;
