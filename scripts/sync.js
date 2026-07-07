@@ -355,8 +355,16 @@ async function main() {
     lastRunAt: new Date().toISOString(),
     log: runLog.filter(Boolean).slice(-50),
   };
-  if (ranApi)  statusPatch.lastRapidApiAt  = new Date(now).toISOString();
-  if (ranWiki) statusPatch.lastWikipediaAt = new Date(now).toISOString();
+  // Les échéances "next*" servent à l'affichage admin (le vrai run sera le
+  // prochain tick du cron 15 min après l'échéance).
+  if (ranApi) {
+    statusPatch.lastRapidApiAt = new Date(now).toISOString();
+    statusPatch.nextRapidApiAt = new Date(now + apiIntervalMin * 60000).toISOString();
+  }
+  if (ranWiki) {
+    statusPatch.lastWikipediaAt = new Date(now).toISOString();
+    statusPatch.nextWikipediaAt = new Date(now + 60 * 60000).toISOString();
+  }
   await statusRef.set(statusPatch, { merge: true });
 }
 

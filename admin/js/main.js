@@ -48,13 +48,9 @@ function backLink() {
 
 // ── Synchronisation automatique : statut + compte à rebours ────────────────
 
-// Le cron GitHub Actions tourne toutes les 4h aux heures UTC fixes (0h, 4h...).
-function nextSyncDate() {
-  const now = new Date();
-  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
-    (Math.floor(now.getUTCHours() / 4) + 1) * 4, 0, 0));
-  return next;
-}
+// Le cron GitHub Actions tourne toutes les 15 min, mais sync.js espace
+// lui-même les vraies synchros (RapidAPI : 75 min x nb de tournois API ;
+// Wikipedia : 1h) et écrit les prochaines échéances dans app/syncStatus.
 
 function fmtCountdown(ms) {
   if (ms <= 0) return 'imminente';
@@ -101,13 +97,25 @@ async function renderSyncStatus() {
       <span style="color:#888;" id="sync-next-at"></span></p>
     ${logHtml}`;
 
+  const fmtAt = (ts) => new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   const tick = () => {
     const cd = document.getElementById('sync-countdown');
     if (!cd) { clearInterval(syncTimerInterval); syncTimerInterval = null; return; }
-    const next = nextSyncDate();
-    cd.textContent = fmtCountdown(next - Date.now());
+    const nextWiki = status && status.nextWikipediaAt ? Date.parse(status.nextWikipediaAt) : null;
+    const nextApi  = status && status.nextRapidApiAt  ? Date.parse(status.nextRapidApiAt)  : null;
+    const soonest = Math.min(...[nextWiki, nextApi].filter(Boolean));
     const at = document.getElementById('sync-next-at');
-    if (at) at.textContent = `(vers ${next.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, toutes les 4h)`;
+    if (!isFinite(soonest)) {
+      cd.textContent = 'au prochain passage';
+      if (at) at.textContent = '(le workflow tourne toutes les 15 min)';
+      return;
+    }
+    cd.textContent = fmtCountdown(soonest - Date.now());
+    const details = [
+      nextWiki ? `Wikipedia vers ${fmtAt(nextWiki)}` : null,
+      nextApi  ? `RapidAPI vers ${fmtAt(nextApi)}`   : null,
+    ].filter(Boolean).join(' · ');
+    if (at) at.textContent = `(${details})`;
   };
 
   if (syncTimerInterval) clearInterval(syncTimerInterval);
