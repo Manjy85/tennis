@@ -311,24 +311,53 @@ async function main() {
   admin.initializeApp({ credential: admin.credential.cert(require('./serviceAccountKey.json')) });
   const db = admin.firestore();
 
+  // Espacement adaptatif : le workflow tourne souvent (cron 15 min) et c'est
+  // ici qu'on décide de taper ou non sur les sources, d'après le timestamp de
+  // la dernière synchro stocké dans app/syncStatus.
+  //  - RapidAPI (quota 50 appels/jour, ~2 appels/tournoi/run) : 75 min entre
+  //    deux runs PAR tournoi suivi via l'API (1 tournoi -> 1h15, 2 -> 2h30...).
+  //  - Wikipedia (pas de quota) : espacement de courtoisie d'1h.
+  // FORCE_SYNC=1 (bouton "Run workflow" manuel) court-circuite l'espacement.
+  const now = Date.now();
+  const force = process.env.FORCE_SYNC === '1';
+  const statusRef = db.collection('app').doc('syncStatus');
+  const status = (await statusRef.get()).data() || {};
+  const apiCount = tracked.filter(t => !t.wikipediaPage && t.type && t.seasonid).length;
+  const apiIntervalMin = 75 * apiCount;
+  const apiDue = force || !status.lastRapidApiAt || now - Date.parse(status.lastRapidApiAt) >= apiIntervalMin * 60000;
+  const wikiDue = force || !status.lastWikipediaAt || now - Date.parse(status.lastWikipediaAt) >= 60 * 60000;
+
+  let ranApi = false, ranWiki = false;
   for (const t of tracked) {
     const tournamentId = t.tournamentId || `${slugify(t.name)}${t.seasonid ? `-${t.seasonid}` : ''}`;
     if (t.wikipediaPage) {
+      if (!wikiDue) continue;
+      ranWiki = true;
       await syncWikipedia(db, tournamentId, t.name, t.wikipediaPage);
     } else if (t.type && t.seasonid) {
+      if (!apiDue) continue;
+      ranApi = true;
       await syncRapidApi(db, tournamentId, t.name, t.type, t.seasonid);
     } else {
       console.warn(`\n[config invalide] ${JSON.stringify(t)} — il faut soit "wikipediaPage", soit "type"+"seasonid".`);
     }
   }
 
+  if (!ranApi && !ranWiki) {
+    console.log(`Rien à faire : prochaine synchro RapidAPI dans ${Math.max(0, Math.ceil(apiIntervalMin - (now - Date.parse(status.lastRapidApiAt || 0)) / 60000))} min, Wikipedia au prochain run après 1h. (app/syncStatus inchangé)`);
+    return;
+  }
+
   console.log('\nTerminé. Pense à ouvrir le tournoi une fois dans l\'admin pour le rendre actif côté joueurs.');
 
   // Statut du run pour l'admin (dernière synchro + journal).
-  await db.collection('app').doc('syncStatus').set({
+  const statusPatch = {
     lastRunAt: new Date().toISOString(),
     log: runLog.filter(Boolean).slice(-50),
-  });
+  };
+  if (ranApi)  statusPatch.lastRapidApiAt  = new Date(now).toISOString();
+  if (ranWiki) statusPatch.lastWikipediaAt = new Date(now).toISOString();
+  await statusRef.set(statusPatch, { merge: true });
 }
 
 main().catch(e => { console.error('Erreur :', e.message); process.exit(1); });
