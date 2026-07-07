@@ -726,6 +726,8 @@ window.adminClearBracketResult = (roundIndex, matchIndex) => {
   if (state.officialResults[`round${roundIndex}`]) {
     state.officialResults[`round${roundIndex}`][matchIndex] = null;
   }
+  const match = state.matches.find(m => m.id === `r${roundIndex}_m${matchIndex}`);
+  if (match) match.result = null;
   for (let r = roundIndex + 1; r < state.rounds.length; r++) {
     state.officialResults[`round${r}`] = Array(state.rounds[r].matches).fill(null);
   }
