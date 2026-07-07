@@ -1,4 +1,5 @@
 import { state, save, getScores } from './state.js';
+import { renderContent } from './render.js';
 
 export function showPredict(playerName) {
   const player = state.players.find(p => p.name === playerName);
@@ -31,7 +32,7 @@ export function showPredict(playerName) {
 
   if (state.matches.length === 0) {
     html += `<p style="color:#888;">Aucun match disponible pour ce tournoi.</p>`;
-    document.getElementById('content').innerHTML = html;
+    renderContent(html, `predict:${playerName}`);
     return;
   }
 
@@ -123,7 +124,7 @@ export function showPredict(playerName) {
   });
 
   html += `</div>`; // bracket-view
-  document.getElementById('content').innerHTML = html;
+  renderContent(html, `predict:${playerName}`);
 }
 
 export function pickWinner(playerName, matchId, winner) {

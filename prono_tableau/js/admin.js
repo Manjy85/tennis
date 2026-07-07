@@ -1,5 +1,6 @@
 import { state, uiState, save, ensurePlayerMeta, getPlayerMetaParts, splitDisplayName } from './state.js';
 import { getBracketMinHeight, updateMatchDimensions } from './bracket.js';
+import { renderContent } from './render.js';
 
 // ── Tab navigation ─────────────────────────────────────────────────────────
 
@@ -22,7 +23,7 @@ export function showAdminPanel(tab = 'tournois') {
   else if (tab === 'config') html += buildConfigHTML();
   else if (tab === 'resultats') html += buildResultatsHTML();
 
-  document.getElementById('content').innerHTML = html;
+  renderContent(html, `admin:${tab}`);
 
   if (tab === 'resultats') updateMatchDimensions(() => showAdminPanel('resultats'));
 }

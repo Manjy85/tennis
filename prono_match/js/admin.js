@@ -1,4 +1,5 @@
 import { state, save, getScores } from './state.js';
+import { renderContent } from './render.js';
 
 export function showAdminPanel(tab = 'tournois') {
   const tabs = [
@@ -20,7 +21,7 @@ export function showAdminPanel(tab = 'tournois') {
   if (tab === 'matchs')    html += buildMatchsHTML();
   if (tab === 'resultats') html += buildResultatsHTML();
 
-  document.getElementById('content').innerHTML = html;
+  renderContent(html, `admin:${tab}`);
 }
 
 // ── Onglet Tournois ────────────────────────────────────────────────────────

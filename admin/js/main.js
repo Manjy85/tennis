@@ -1,5 +1,6 @@
 import { state, loadState, switchTournament, createTournament, saveTableau, savePmMatch, ensurePlayerMeta, syncMatchesFromBracket } from './state.js';
 import { deleteTournament, deleteTableauPred, deleteMatchPred, loadSyncStatus } from './firebase.js';
+import { renderContent } from './render.js';
 import {
   onAuth, currentUser, getUsername, adminConfigExists, initAdmin, login, logout,
   changeUsername, changePassword, authErrorMessage, isAdminAccount,
@@ -29,7 +30,7 @@ export function showTab(tab) {
     'user':         buildUserPronos,
     'compte':       buildCompte,
   };
-  document.getElementById('content').innerHTML = (builders[tab] || buildTournois)();
+  renderContent((builders[tab] || buildTournois)(), `admin:${tab}`);
 }
 
 function requireTournament(title) {

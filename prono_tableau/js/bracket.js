@@ -1,4 +1,5 @@
 import { state, uiState, save, getPlayerMetaParts, splitDisplayName } from './state.js';
+import { renderContent } from './render.js';
 
 export function updateMatchDimensions(rerender) {
   const bracketEl = document.querySelector('#content .bracket');
@@ -200,6 +201,6 @@ export function showBracket(playerName) {
     html += `</div></div>`;
   });
   html += `</div>`;
-  document.getElementById('content').innerHTML = html;
+  renderContent(html, `bracket:${playerName}`);
   updateMatchDimensions(() => showBracket(playerName));
 }
