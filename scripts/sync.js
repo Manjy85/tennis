@@ -89,6 +89,20 @@ function buildBracketData(draw) {
 async function syncWikipedia(db, tournamentId, name, page) {
   console.log(`\n${name} (wikipedia: ${page}) -> tournaments/${tournamentId}`);
 
+  const ref = db.collection('tournaments').doc(tournamentId);
+  const snap = await ref.get();
+
+  // Tournoi déjà terminé en base (finale connue) : plus rien à synchroniser,
+  // on s'épargne le re-parsing complet de la page Wikipedia à chaque run.
+  if (snap.exists) {
+    const d = snap.data();
+    const nRounds = (d.rg_rounds || []).length;
+    if (nRounds && ((d.rg_results || {})[`round${nRounds - 1}`] || [])[0]) {
+      console.log(`  [terminé] finale déjà en base — synchro arrêtée pour ce tournoi.`);
+      return;
+    }
+  }
+
   let draw;
   try {
     draw = await importWikipediaDraw(page);
@@ -99,8 +113,6 @@ async function syncWikipedia(db, tournamentId, name, page) {
   draw.warnings.forEach(w => console.warn(`  [avertissement] ${w}`));
 
   const { rounds, officialResults, pmMatches } = buildBracketData(draw);
-  const ref = db.collection('tournaments').doc(tournamentId);
-  const snap = await ref.get();
 
   if (!snap.exists) {
     // Catégorie (barème du classement général) : bo5 = Grand Chelem, 64+ =
