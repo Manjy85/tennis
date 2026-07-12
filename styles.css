@@ -262,6 +262,7 @@ header h1 { margin: 0; font-size: 1.3rem; }
   padding: 2px 8px; border-radius: 10px; vertical-align: middle; margin-left: 6px;
 }
 .closed-tag { font-size: 13px; color: #b71c1c; font-weight: bold; }
+.round-pct { color: #999; font-size: 11px; }
 .player-link { color: inherit; text-decoration: none; }
 .player-link:hover strong { text-decoration: underline; color: #0c6b2f; }
 .ranking-block.general { border-left: 4px solid #0c6b2f; }

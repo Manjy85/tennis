@@ -1,15 +1,23 @@
 // Scoring « pur » : travaille sur des données passées en argument (pas l'état
 // global), pour pouvoir classer plusieurs tournois sur la même page.
 
+// Points + réussite par round pour un pronostic tableau :
+// [{ pts, correct, played }] — played = matchs du round au résultat connu.
+export function tabRoundStats(rounds, results, predictions) {
+  return rounds.map((round, ri) => {
+    let pts = 0, correct = 0, played = 0;
+    ((results[`round${ri}`] || [])).forEach((off, mi) => {
+      if (!off) return;
+      played++;
+      if ((predictions[`round${ri}`] || [])[mi] === off) { correct++; pts += round.points; }
+    });
+    return { pts, correct, played };
+  });
+}
+
 // Points par round pour un pronostic tableau.
 export function tabRoundScores(rounds, results, predictions) {
-  return rounds.map((round, ri) => {
-    let pts = 0;
-    (predictions[`round${ri}`] || []).forEach((w, mi) => {
-      if (w && w === (results[`round${ri}`] || [])[mi]) pts += round.points;
-    });
-    return pts;
-  });
+  return tabRoundStats(rounds, results, predictions).map(s => s.pts);
 }
 
 export function tabScore(rounds, results, predictions) {

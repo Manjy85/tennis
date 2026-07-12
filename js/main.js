@@ -1,6 +1,6 @@
 import { state, loadState, switchTournament, setMe } from './state.js';
 import { loadTournament, loadTableauPreds, loadMatchPreds } from './firebase.js';
-import { tabRoundScores, tabScore, tabMax, matchStats, generalRanking, categoryOf, CATEGORY_LABELS, tournamentStarted } from './ranking.js';
+import { tabRoundStats, tabScore, tabMax, matchStats, generalRanking, categoryOf, CATEGORY_LABELS, tournamentStarted } from './ranking.js';
 import { ensureMyTableau, showBracket, selectWinner, lockBracket, toggleRound } from './tableau.js';
 import { ensureMyMatch, showMatchsRestants, showRecap, toggleRecapRound, pickWinner, pickScore, lockMatch } from './match.js';
 import {
@@ -171,10 +171,10 @@ async function showClassement() {
 
     // ── Table Tableau (détail par round + Max) ──
     const tRows = tPreds.map(p => {
-      const rs = tabRoundScores(rounds, results, p.predictions || {});
+      const rs = tabRoundStats(rounds, results, p.predictions || {});
       return {
-        name: p.displayName || p.uid, locked: !!p.locked, roundScores: rs,
-        total: rs.reduce((a, b) => a + b, 0),
+        name: p.displayName || p.uid, locked: !!p.locked, roundStats: rs,
+        total: rs.reduce((a, b) => a + b.pts, 0),
         max: tabMax(rounds, results, initialPlayers, p.predictions || {}),
         uid: p.uid,
       };
@@ -194,7 +194,7 @@ async function showClassement() {
           <td><a href="#" class="player-link" title="Voir son tableau (les matchs non joués restent masqués)"
             onclick="event.preventDefault(); viewBracket('${t.id}','${r.uid}')"><strong>${r.name}</strong></a>${me ? ' <span class="mine-tag">toi</span>' : ''}</td>
           <td>${r.locked ? '🔒 Prêt' : '✏️ En cours'}</td>
-          ${r.roundScores.map(p => `<td>${p}</td>`).join('')}
+          ${r.roundStats.map(s => `<td>${s.pts}${s.played ? `<br><small class="round-pct">(${Math.round(100 * s.correct / s.played)}%)</small>` : ''}</td>`).join('')}
           <td class="pts">${r.total} pts</td>
           <td class="max">${r.max} pts</td>
         </tr>`;
