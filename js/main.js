@@ -81,6 +81,12 @@ async function loadBundles() {
 // Profils (avatar…) chargés avec les classements : users/{uid}.
 let userProfiles = {};
 
+// Pseudo à afficher : celui du profil (users/{uid}) en priorité — un
+// renommage se propage ainsi partout, même dans les anciens tournois.
+function nameOf(uid, fallback) {
+  return (userProfiles[uid] || {}).displayName || fallback || uid;
+}
+
 // Avatar rond : photo du profil si présente, sinon initiale du pseudo.
 function avatarHtml(uid, name) {
   const p = userProfiles[uid] || {};
@@ -106,10 +112,10 @@ async function showGeneral() {
     const bracketSize = (doc.rg_initialPlayers || []).length || null;
     const finished = tournamentFinished(doc.rg_rounds, doc.rg_results);
     tGeneralInput.push({ name: t.name, category, bracketSize, finished,
-      rows: tPreds.map(p => ({ uid: p.uid, name: p.displayName || p.uid,
+      rows: tPreds.map(p => ({ uid: p.uid, name: nameOf(p.uid, p.displayName),
         pts: tabScore(doc.rg_rounds || [], doc.rg_results || {}, p.predictions || {}) })) });
     mGeneralInput.push({ name: t.name, category, bracketSize, finished,
-      rows: mPreds.map(p => ({ uid: p.uid, name: p.displayName || p.uid,
+      rows: mPreds.map(p => ({ uid: p.uid, name: nameOf(p.uid, p.displayName),
         pts: matchStats(doc.pm_matches || [], p.predictions || {}, doc.pm_format || 'bo3').pts })) });
   });
 
@@ -190,7 +196,7 @@ async function showClassement() {
     const tRows = tPreds.map(p => {
       const rs = tabRoundStats(rounds, results, p.predictions || {});
       return {
-        name: p.displayName || p.uid, locked: !!p.locked, roundStats: rs,
+        name: nameOf(p.uid, p.displayName), locked: !!p.locked, roundStats: rs,
         total: rs.reduce((a, b) => a + b.pts, 0),
         max: tabMax(rounds, results, initialPlayers, p.predictions || {}),
         uid: p.uid,
@@ -222,7 +228,7 @@ async function showClassement() {
     // ── Mini-table Match ──
     const mRows = mPreds.map(p => {
       const s = matchStats(matches, p.predictions || {}, doc.pm_format || 'bo3');
-      return { name: p.displayName || p.uid, uid: p.uid, ...s };
+      return { name: nameOf(p.uid, p.displayName), uid: p.uid, ...s };
     }).filter(r => r.bons || r.exacts || r.pts || true).sort((a, b) => b.pts - a.pts || b.exacts - a.exacts);
 
     if (mRows.length && matches.length) {
