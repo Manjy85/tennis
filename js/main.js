@@ -1,6 +1,6 @@
 import { state, loadState, switchTournament, setMe } from './state.js';
 import { loadTournament, loadTableauPreds, loadMatchPreds } from './firebase.js';
-import { tabRoundStats, tabScore, tabMax, matchStats, generalRanking, categoryOf, CATEGORY_LABELS, tournamentStarted } from './ranking.js';
+import { tabRoundStats, tabScore, tabMax, matchStats, generalRanking, categoryOf, CATEGORY_LABELS, tournamentStarted, tournamentFinished } from './ranking.js';
 import { ensureMyTableau, showBracket, selectWinner, lockBracket, toggleRound } from './tableau.js';
 import { ensureMyMatch, showMatchsRestants, showRecap, toggleRecapRound, pickWinner, pickScore, lockMatch } from './match.js';
 import {
@@ -87,10 +87,11 @@ async function showGeneral() {
   bundles.forEach(({ t, doc, tPreds, mPreds }) => {
     const category = categoryOf(doc);
     const bracketSize = (doc.rg_initialPlayers || []).length || null;
-    tGeneralInput.push({ name: t.name, category, bracketSize,
+    const finished = tournamentFinished(doc.rg_rounds, doc.rg_results);
+    tGeneralInput.push({ name: t.name, category, bracketSize, finished,
       rows: tPreds.map(p => ({ uid: p.uid, name: p.displayName || p.uid,
         pts: tabScore(doc.rg_rounds || [], doc.rg_results || {}, p.predictions || {}) })) });
-    mGeneralInput.push({ name: t.name, category, bracketSize,
+    mGeneralInput.push({ name: t.name, category, bracketSize, finished,
       rows: mPreds.map(p => ({ uid: p.uid, name: p.displayName || p.uid,
         pts: matchStats(doc.pm_matches || [], p.predictions || {}, doc.pm_format || 'bo3').pts })) });
   });
@@ -100,14 +101,16 @@ async function showGeneral() {
     let h = `<section class="ranking-block general">
       <div class="ranking-title-row"><h3 class="ranking-title">${title}</h3></div>
       <div class="table-scroll"><table class="ranking-table"><thead><tr>
-        <th>#</th><th>Joueur</th><th>Points ATP</th><th>Détail</th></tr></thead><tbody>`;
+        <th>#</th><th>Joueur</th><th title="Points des tournois terminés">Réel</th>
+        <th title="Réel + place actuelle des tournois en cours">Virtuel</th><th>Détail</th></tr></thead><tbody>`;
     ranking.forEach((r, i) => {
       const me = state.me && r.uid === state.me.uid;
-      const detail = r.details.map(d => `${d.tournament} : ${d.rank}ᵉ (+${d.atp})`).join(' · ');
+      const detail = r.details.map(d => `${d.tournament} : ${d.rank}ᵉ (+${d.atp}${d.finished ? '' : ', en cours'})`).join(' · ');
       h += `<tr class="${me ? 'is-me-row' : ''}">
         <td>${i + 1}</td>
         <td><strong>${r.name}</strong>${me ? ' <span class="mine-tag">toi</span>' : ''}</td>
-        <td class="pts">${r.atp} pts</td>
+        <td class="pts">${r.real} pts</td>
+        <td class="max">${r.virtual} pts</td>
         <td style="font-size:12px; color:#777;">${detail}</td>
       </tr>`;
     });
@@ -117,7 +120,8 @@ async function showGeneral() {
   let html = `<h2>Classement général</h2>
     <p style="color:#888; font-size:13px; margin:4px 0 16px;">
       Comme au tennis : ta place dans chaque tournoi te rapporte les points ATP de sa catégorie
-      (Grand Chelem : 2000 au 1ᵉʳ… ATP 250 : 250), et 5 pts de participation au-delà de la taille du tableau.
+      (Grand Chelem : 2000 au 1ᵉʳ… ATP 250 : 250), et 5 pts de participation au-delà de la taille du tableau.<br>
+      <strong>Réel</strong> = tournois terminés uniquement · <strong>Virtuel</strong> = réel + ta place actuelle dans les tournois en cours.
     </p>`;
   html += renderGeneral('🏆 Général — Prono Tableau', generalRanking(tGeneralInput));
   html += renderGeneral('🥎 Général — Prono Match', generalRanking(mGeneralInput));
@@ -143,11 +147,7 @@ async function showClassement() {
 
   // Tournoi terminé (tous les résultats rentrés = la finale a un vainqueur) :
   // archivé à l'affichage, mais compte toujours dans les classements généraux.
-  const isFinished = ({ doc }) => {
-    const rounds = doc.rg_rounds || [];
-    const res = doc.rg_results || {};
-    return rounds.length > 0 && !!(res[`round${rounds.length - 1}`] || [])[0];
-  };
+  const isFinished = ({ doc }) => tournamentFinished(doc.rg_rounds, doc.rg_results);
 
   const renderBlock = ({ t, doc, tPreds, mPreds }, archived) => {
     let html = '';

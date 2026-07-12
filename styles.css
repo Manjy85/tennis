@@ -265,8 +265,6 @@ header h1 { margin: 0; font-size: 1.3rem; }
 .round-pct { color: #999; font-size: 11px; }
 .player-link { color: inherit; text-decoration: none; }
 .player-link:hover strong { text-decoration: underline; color: #0c6b2f; }
-.ranking-block.general { border-left: 4px solid #0c6b2f; }
-
 /* Tournois terminés : section repliée en bas du classement */
 .archive-block { margin-top: 24px; }
 .archive-block > summary {

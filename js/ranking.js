@@ -82,23 +82,31 @@ export function atpPointsForRank(rank, category, bracketSize) {
   return scale[Math.min(tier, tiers - 1)];
 }
 
+// Tournoi terminé = la finale a un vainqueur.
+export function tournamentFinished(rounds, results) {
+  return (rounds || []).length > 0 && !!(((results || {})[`round${(rounds || []).length - 1}`] || [])[0]);
+}
+
 // Agrège un classement général à partir de listes par tournoi.
-// perTournament : [{ category, bracketSize, rows: [{ uid, name, pts }] }]
-// Retourne [{ uid, name, atp, details: [{tournament, rank, atp}] }] trié.
+// perTournament : [{ category, bracketSize, finished, rows: [{ uid, name, pts }] }]
+//  - réel    : points ATP des tournois TERMINÉS uniquement (acquis)
+//  - virtuel : réel + projection des tournois en cours (place actuelle)
+// Retourne [{ uid, name, real, virtual, details }] trié par virtuel.
 export function generalRanking(perTournament) {
   const acc = {};
-  perTournament.forEach(({ name: tName, category, bracketSize, rows }) => {
+  perTournament.forEach(({ name: tName, category, bracketSize, finished, rows }) => {
     // Rang « compétition » : à égalité de points, même rang.
     const sorted = [...rows].sort((a, b) => b.pts - a.pts);
     sorted.forEach(r => {
       const rank = 1 + sorted.filter(x => x.pts > r.pts).length;
       const atp = atpPointsForRank(rank, category, bracketSize);
-      if (!acc[r.uid]) acc[r.uid] = { uid: r.uid, name: r.name, atp: 0, details: [] };
-      acc[r.uid].atp += atp;
-      acc[r.uid].details.push({ tournament: tName, rank, atp });
+      if (!acc[r.uid]) acc[r.uid] = { uid: r.uid, name: r.name, real: 0, virtual: 0, details: [] };
+      acc[r.uid].virtual += atp;
+      if (finished) acc[r.uid].real += atp;
+      acc[r.uid].details.push({ tournament: tName, rank, atp, finished });
     });
   });
-  return Object.values(acc).sort((a, b) => b.atp - a.atp);
+  return Object.values(acc).sort((a, b) => b.virtual - a.virtual || b.real - a.real);
 }
 
 // Le tournoi a-t-il VRAIMENT commencé ? Les WO des byes (têtes de série
