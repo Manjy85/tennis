@@ -73,6 +73,11 @@ export function selectWinner(uid, roundIndex, matchIndex, winner) {
   if (player.locked && !isSlotReopened(player, roundIndex, matchIndex)) {
     return alert('Ton tableau est verrouillé !');
   }
+  // Anti-triche : match déjà joué → pronostic figé.
+  const off = (state.officialResults[`round${roundIndex}`] || [])[matchIndex];
+  if (off !== null && off !== undefined) {
+    return alert('Ce match est déjà joué, le pronostic est figé.');
+  }
   const old = player.predictions[`round${roundIndex}`][matchIndex];
   player.predictions[`round${roundIndex}`][matchIndex] = winner;
   if (old && old !== winner) {

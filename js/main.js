@@ -233,12 +233,20 @@ async function showClassement() {
     if (state.me && !archived) {
       const myT = tPreds.find(p => p.uid === state.me.uid);
       const myM = mPreds.find(p => p.uid === state.me.uid);
-      if (myT || myM) {
-        const tTotal = rounds.reduce((a, r) => a + r.matches, 0);
-        const tFilled = myT ? Object.values(myT.predictions || {}).flat().filter(Boolean).length : 0;
-        if (myT) myRemaining += Math.max(0, tTotal - tFilled);
-        const mLocked = myM ? Object.values(myM.predictions || {}).filter(x => x && x.locked).length : 0;
-        if (myM) myRemaining += Math.max(0, matches.length - mLocked);
+      if (myT) {
+        // Tableau : seules les cases encore pronosticables comptent (pas de
+        // résultat officiel connu, pas un slot de bye).
+        rounds.forEach((r, ri) => {
+          for (let mi = 0; mi < r.matches; mi++) {
+            if (((results[`round${ri}`] || [])[mi])) continue;
+            if (ri === 0 && (initialPlayers[mi * 2] === 'Bye' || initialPlayers[mi * 2 + 1] === 'Bye')) continue;
+            if (!((myT.predictions || {})[`round${ri}`] || [])[mi]) myRemaining++;
+          }
+        });
+      }
+      if (myM) {
+        // Match : un match joué sans prono verrouillé n'est plus « restant ».
+        myRemaining += matches.filter(m => !m.result && !((myM.predictions || {})[m.id] || {}).locked).length;
       }
     }
     return html;
