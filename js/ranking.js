@@ -93,6 +93,21 @@ export function generalRanking(perTournament) {
   return Object.values(acc).sort((a, b) => b.atp - a.atp);
 }
 
+// Le tournoi a-t-il VRAIMENT commencé ? Les WO des byes (têtes de série
+// exemptées, présents dès la création du tableau) ne comptent pas : seul un
+// résultat entre deux vrais joueurs ferme les inscriptions.
+export function tournamentStarted(rounds, results, initialPlayers, matches) {
+  if ((matches || []).some(m => m.result && m.player1 !== 'Bye' && m.player2 !== 'Bye')) return true;
+  return (rounds || []).some((r, ri) => ((results || {})[`round${ri}`] || []).some((w, mi) => {
+    if (!w) return false;
+    if (ri === 0) {
+      const p1 = (initialPlayers || [])[mi * 2], p2 = (initialPlayers || [])[mi * 2 + 1];
+      if (p1 === 'Bye' || p2 === 'Bye') return false;
+    }
+    return true;
+  }));
+}
+
 // Points d'un score exact selon le format : 2 en bo3 (2 scores possibles),
 // 3 en bo5 (3 scores possibles, plus dur). Bon vainqueur seul : 1 pt.
 export function exactScorePoints(format) {

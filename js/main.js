@@ -1,6 +1,6 @@
 import { state, loadState, switchTournament, setMe } from './state.js';
 import { loadTournament, loadTableauPreds, loadMatchPreds } from './firebase.js';
-import { tabRoundScores, tabScore, tabMax, matchStats, generalRanking, categoryOf, CATEGORY_LABELS } from './ranking.js';
+import { tabRoundScores, tabScore, tabMax, matchStats, generalRanking, categoryOf, CATEGORY_LABELS, tournamentStarted } from './ranking.js';
 import { ensureMyTableau, showBracket, selectWinner, lockBracket, toggleRound } from './tableau.js';
 import { ensureMyMatch, showMatchsRestants, showRecap, toggleRecapRound, pickWinner, pickScore, lockMatch } from './match.js';
 import {
@@ -9,7 +9,7 @@ import {
 
 // ── État de navigation ─────────────────────────────────────────────────────
 
-let activeNav  = 'home';     // 'home' (classement) | 'pronos'
+let activeNav  = 'home';     // 'home' (tournois) | 'general' | 'pronos'
 let pronosTab  = 'tableau';  // 'tableau' | 'restants' | 'recap'
 
 // Affiche/masque la navigation principale.
@@ -41,17 +41,19 @@ function renderApp(user) {
 
 function setActiveNav(name) {
   activeNav = name;
-  const map = { home: 'nav-home', pronos: 'nav-pronos' };
+  const map = { home: 'nav-home', general: 'nav-general', pronos: 'nav-pronos' };
   Object.values(map).forEach(id => document.getElementById(id)?.classList.remove('active'));
   document.getElementById(map[name])?.classList.add('active');
 }
 
 function runActiveView() {
   if (activeNav === 'pronos' && state.me) { setActiveNav('pronos'); showMesPronos(); }
+  else if (activeNav === 'general') { setActiveNav('general'); showGeneral(); }
   else { setActiveNav('home'); showClassement(); }
 }
 
 window.goHome = () => { setActiveNav('home'); showClassement(); };
+window.goGeneral = () => { setActiveNav('general'); showGeneral(); };
 window.goMesPronos = () => {
   if (!state.me) return window.requireLogin();
   setActiveNav('pronos');
@@ -60,26 +62,27 @@ window.goMesPronos = () => {
 
 // ── Classement : toutes les tables empilées (Tableau + mini Match) ──────────
 
-async function showClassement() {
-  const content = document.getElementById('content');
-  if (!state.tournamentList.length) {
-    content.innerHTML = `<p style="color:#888; padding:24px;">Aucun tournoi disponible pour le moment.</p>`;
-    return;
-  }
-  content.innerHTML = `<p style="text-align:center;padding:40px;color:#666;">Chargement des classements...</p>`;
-
-  // Charge en parallèle les données complètes de chaque tournoi.
-  const bundles = await Promise.all(state.tournamentList.map(async t => {
+// Charge en parallèle les données complètes de chaque tournoi.
+async function loadBundles() {
+  return Promise.all(state.tournamentList.map(async t => {
     const [doc, tPreds, mPreds] = await Promise.all([
       loadTournament(t.id), loadTableauPreds(t.id), loadMatchPreds(t.id),
     ]);
     return { t, doc: doc || {}, tPreds, mPreds };
   }));
+}
 
-  let html = `<h2>Classement</h2>`;
-  let myRemaining = 0;
+// ── Classement général (onglet dédié) : points ATP par tournoi selon la place ──
 
-  // ── Classements généraux (points ATP par tournoi selon la place) ──
+async function showGeneral() {
+  const content = document.getElementById('content');
+  if (!state.tournamentList.length) {
+    content.innerHTML = `<p style="color:#888; padding:24px;">Aucun tournoi disponible pour le moment.</p>`;
+    return;
+  }
+  content.innerHTML = `<p style="text-align:center;padding:40px;color:#666;">Chargement du classement général...</p>`;
+  const bundles = await loadBundles();
+
   const tGeneralInput = [], mGeneralInput = [];
   bundles.forEach(({ t, doc, tPreds, mPreds }) => {
     const category = categoryOf(doc);
@@ -91,6 +94,7 @@ async function showClassement() {
       rows: mPreds.map(p => ({ uid: p.uid, name: p.displayName || p.uid,
         pts: matchStats(doc.pm_matches || [], p.predictions || {}, doc.pm_format || 'bo3').pts })) });
   });
+
   const renderGeneral = (title, ranking) => {
     if (!ranking.length) return '';
     let h = `<section class="ranking-block general">
@@ -109,8 +113,33 @@ async function showClassement() {
     });
     return h + `</tbody></table></div></section>`;
   };
-  html += renderGeneral('🌍 Classement général — Tableau', generalRanking(tGeneralInput));
-  html += renderGeneral('🌍 Classement général — Match', generalRanking(mGeneralInput));
+
+  let html = `<h2>Classement général</h2>
+    <p style="color:#888; font-size:13px; margin:4px 0 16px;">
+      Comme au tennis : ta place dans chaque tournoi te rapporte les points ATP de sa catégorie
+      (Grand Chelem : 2000 au 1ᵉʳ… ATP 250 : 250), et 5 pts de participation au-delà de la taille du tableau.
+    </p>`;
+  html += renderGeneral('🏆 Général — Prono Tableau', generalRanking(tGeneralInput));
+  html += renderGeneral('🥎 Général — Prono Match', generalRanking(mGeneralInput));
+  if (!tGeneralInput.some(x => x.rows.length) && !mGeneralInput.some(x => x.rows.length)) {
+    html += `<p style="color:#888; padding:24px;">Aucun participant pour l'instant.</p>`;
+  }
+  content.innerHTML = html;
+}
+
+// ── Classement des tournois ──────────────────────────────────────────────────
+
+async function showClassement() {
+  const content = document.getElementById('content');
+  if (!state.tournamentList.length) {
+    content.innerHTML = `<p style="color:#888; padding:24px;">Aucun tournoi disponible pour le moment.</p>`;
+    return;
+  }
+  content.innerHTML = `<p style="text-align:center;padding:40px;color:#666;">Chargement des classements...</p>`;
+  const bundles = await loadBundles();
+
+  let html = `<h2>Tournois</h2>`;
+  let myRemaining = 0;
 
   // Tournoi terminé (tous les résultats rentrés = la finale a un vainqueur) :
   // archivé à l'affichage, mais compte toujours dans les classements généraux.
@@ -127,8 +156,8 @@ async function showClassement() {
     const initialPlayers = doc.rg_initialPlayers || [];
     const matches = doc.pm_matches || [];
     const category = categoryOf(doc);
-    // Tournoi commencé = au moins un résultat officiel : inscriptions closes.
-    const started = Object.values(results).flat().some(Boolean) || matches.some(m => m.result);
+    // Tournoi commencé = au moins un vrai résultat (les WO des byes ne comptent pas).
+    const started = tournamentStarted(rounds, results, initialPlayers, matches);
 
     const iAmIn = state.me && (tPreds.some(p => p.uid === state.me.uid) || mPreds.some(p => p.uid === state.me.uid));
     html += `<section class="ranking-block">
@@ -297,10 +326,9 @@ function showMesPronos() {
   renderPronosBody();
 }
 
-// Le tournoi courant a-t-il commencé ? (au moins un résultat officiel)
+// Le tournoi courant a-t-il commencé ? (au moins un vrai résultat, hors byes)
 function currentTournamentStarted() {
-  return Object.values(state.officialResults || {}).flat().some(Boolean)
-    || (state.matches || []).some(m => m.result);
+  return tournamentStarted(state.rounds, state.officialResults, state.initialPlayers, state.matches);
 }
 
 window.joinTournament = () => {
