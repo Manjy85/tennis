@@ -237,7 +237,11 @@ async function importWikipediaDraw(page) {
         if (!m.team1 && !m.team2) {
           const advancing = bracket.getTeam(2, m.matchIndex + 1);
           if (advancing && !advancing.bye && advancing.name) {
-            initialPlayers.push(advancing.name, 'Bye');
+            // Position réelle du tirage : le qualifié d'office occupe la ligne
+            // haute si son slot RD2 est en haut de son match (matchIndex pair),
+            // la ligne basse sinon (ex : tête de série n°2 en toute dernière ligne).
+            if (m.matchIndex % 2 === 0) initialPlayers.push(advancing.name, 'Bye');
+            else initialPlayers.push('Bye', advancing.name);
             byes++;
             const seed = bracket.matches.find(x => x.round === 2 && x.matchIndex === Math.floor(m.matchIndex / 2));
             const seedVal = seed ? (m.matchIndex % 2 === 0 ? seed.seed1 : seed.seed2) : '';

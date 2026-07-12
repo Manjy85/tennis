@@ -280,6 +280,12 @@ header h1 { margin: 0; font-size: 1.3rem; }
 }
 .auth-profile-btn:hover { background: rgba(255,255,255,0.15); }
 .profil-ok { color: #0c6b2f; background: #e8f5e9; padding: 10px 14px; border-radius: 8px; }
+
+/* Slot « Bye » du 1er tour : non cliquable, adversaire qualifié d'office */
+.player-btn.bye-slot {
+  color: #aaa; font-style: italic; background: #f2f4f7;
+  cursor: default; display: flex; align-items: center; justify-content: center;
+}
 .player-link { color: inherit; text-decoration: none; }
 .player-link:hover strong { text-decoration: underline; color: #0c6b2f; }
 /* Tournois terminés : section repliée en bas du classement */

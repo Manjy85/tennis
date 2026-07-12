@@ -408,7 +408,10 @@ window.setPronosTab = (t) => { pronosTab = t; renderPronosBody(); };
 
 window.pronosSwitchTournament = async (id) => {
   if (id === state.currentTournamentId) return;
-  document.getElementById('pp-body').innerHTML = '<p style="text-align:center;padding:40px;color:#666;">Chargement...</p>';
+  // pp-body n'existe pas sur la carte « Je participe » : cible-le si présent,
+  // sinon le contenu entier (sinon le sélecteur restait bloqué).
+  const target = document.getElementById('pp-body') || document.getElementById('content');
+  target.innerHTML = '<p style="text-align:center;padding:40px;color:#666;">Chargement...</p>';
   await switchTournament(id);
   showMesPronos();
 };

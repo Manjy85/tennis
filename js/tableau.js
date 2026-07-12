@@ -149,6 +149,21 @@ export function showBracket(uid, containerId = 'content') {
   // révélés que sur les matchs dont le résultat est connu.
   const owner = isMine(player);
 
+  // Byes : le joueur face à un bye est qualifié d'office — son pick de 1er
+  // tour est auto-rempli (pas de pronostic à faire sur ces matchs).
+  if (owner && state.rounds.length) {
+    let changed = false;
+    for (let i = 0; i < state.rounds[0].matches; i++) {
+      const p1 = state.initialPlayers[i * 2], p2 = state.initialPlayers[i * 2 + 1];
+      const real = p1 === 'Bye' ? p2 : p2 === 'Bye' ? p1 : null;
+      if (real && (player.predictions['round0'] || [])[i] !== real) {
+        player.predictions['round0'][i] = real;
+        changed = true;
+      }
+    }
+    if (changed) saveMyTableau(player);
+  }
+
   state.rounds.forEach((round, ri) => {
     const roundPlayers = ri === 0 ? state.initialPlayers
       : owner ? (player.predictions[`round${ri - 1}`] || [])
@@ -174,13 +189,18 @@ export function showBracket(uid, containerId = 'content') {
       const p2 = roundPlayers[i * 2 + 1];
       // Slot rouvert (changement de joueur) : éditable malgré le verrou.
       const reopenedSlot = isMine(player) && isSlotReopened(player, ri, i);
-      const slotEditable = editable || reopenedSlot;
+      const byeMatch = p1 === 'Bye' || p2 === 'Bye';
+      const slotEditable = (editable || reopenedSlot) && !byeMatch;
       if (!p1 && !p2) {
         html += `<div class="match empty"><span style="color:#aaa;">En attente...</span></div>`;
       } else {
         html += `<div class="match${reopenedSlot ? ' reopened' : ''}">`;
         [p1, p2].forEach(p => {
           if (!p) return;
+          if (p === 'Bye') {
+            html += `<div class="player-btn bye-slot" title="Exempt de 1er tour : l'adversaire est qualifié d'office">Bye</div>`;
+            return;
+          }
           const meta  = getPlayerMetaParts(p);
           const parts = splitDisplayName(p);
           const off   = (state.officialResults[`round${ri}`] || [])[i];
@@ -192,7 +212,7 @@ export function showBracket(uid, containerId = 'content') {
           html += `<button class="${cls}" onclick="selectWinner('${player.uid}',${ri},${i},'${p.replace(/'/g,"\\'")}')" ${slotEditable ? '' : 'disabled'}>
             <span class="player-label">
               <span class="player-seed">${meta.seed}</span>
-              <span class="player-name"><span>${parts.lastName}</span><span>${parts.firstName}</span></span>
+              <span class="player-name"><span>${parts.lastName}</span> <span>${parts.firstName}</span></span>
               <span class="player-nat">${meta.nat}</span>
             </span>
           </button>`;
