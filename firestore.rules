@@ -31,6 +31,12 @@ service cloud.firestore {
       allow write: if isAdmin() || (request.auth != null && noAdminYet());
     }
 
+    // Profils publics (pseudo, avatar) : chacun n'écrit que le sien.
+    match /users/{uid} {
+      allow read: if true;
+      allow write: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+    }
+
     match /tournaments/{tid} {
       allow read: if true;
       allow write: if isAdmin();

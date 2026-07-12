@@ -31,6 +31,15 @@ async function loadPreds(tid, kind) {
 const saveMyPred = (tid, kind, uid, data) =>
   setDoc(doc(db, 'tournaments', tid, kind, uid), { ...data, updatedAt: new Date().toISOString() }, { merge: true });
 
+// ── Profils utilisateurs (users/{uid} : avatar, pseudo) ─────────────────────
+export const loadUsers  = async () => {
+  const s = await getDocs(collection(db, 'users'));
+  const map = {};
+  s.docs.forEach(d => { map[d.id] = d.data(); });
+  return map;
+};
+export const saveMyUser = (uid, data) => setDoc(doc(db, 'users', uid), data, { merge: true });
+
 export const loadTableauPreds   = (tid)              => loadPreds(tid, 'tableauPreds');
 export const saveMyTableauPred  = (tid, uid, data)   => saveMyPred(tid, 'tableauPreds', uid, data);
 export const loadMatchPreds     = (tid)              => loadPreds(tid, 'matchPreds');
