@@ -21,6 +21,7 @@ function calcScore(player) {
   let score = 0;
   state.matches.forEach(match => {
     if (!match.result) return;
+    if (match.player1 === 'Bye' || match.player2 === 'Bye') return; // qualification d'office
     const pred = (player.predictions || {})[match.id] || {};
     if (!pred.winner) return;
     const okWinner = pred.winner === match.result.winner;

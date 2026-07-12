@@ -113,7 +113,7 @@ async function showGeneral() {
     const finished = tournamentFinished(doc.rg_rounds, doc.rg_results);
     tGeneralInput.push({ name: t.name, category, bracketSize, finished,
       rows: tPreds.map(p => ({ uid: p.uid, name: nameOf(p.uid, p.displayName),
-        pts: tabScore(doc.rg_rounds || [], doc.rg_results || {}, p.predictions || {}) })) });
+        pts: tabScore(doc.rg_rounds || [], doc.rg_results || {}, p.predictions || {}, doc.rg_initialPlayers || []) })) });
     mGeneralInput.push({ name: t.name, category, bracketSize, finished,
       rows: mPreds.map(p => ({ uid: p.uid, name: nameOf(p.uid, p.displayName),
         pts: matchStats(doc.pm_matches || [], p.predictions || {}, doc.pm_format || 'bo3').pts })) });
@@ -194,7 +194,7 @@ async function showClassement() {
 
     // ── Table Tableau (détail par round + Max) ──
     const tRows = tPreds.map(p => {
-      const rs = tabRoundStats(rounds, results, p.predictions || {});
+      const rs = tabRoundStats(rounds, results, p.predictions || {}, initialPlayers);
       return {
         name: nameOf(p.uid, p.displayName), locked: !!p.locked, roundStats: rs,
         total: rs.reduce((a, b) => a + b.pts, 0),

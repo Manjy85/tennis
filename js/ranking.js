@@ -1,13 +1,20 @@
 // Scoring « pur » : travaille sur des données passées en argument (pas l'état
 // global), pour pouvoir classer plusieurs tournois sur la même page.
 
+// Match de 1er tour contre un bye : qualification d'office, ne rapporte rien.
+function isByeMatch(initialPlayers, ri, mi) {
+  if (ri !== 0) return false;
+  return (initialPlayers || [])[mi * 2] === 'Bye' || (initialPlayers || [])[mi * 2 + 1] === 'Bye';
+}
+
 // Points + réussite par round pour un pronostic tableau :
-// [{ pts, correct, played }] — played = matchs du round au résultat connu.
-export function tabRoundStats(rounds, results, predictions) {
+// [{ pts, correct, played }] — played = matchs du round au résultat connu,
+// hors byes (qualification d'office : pas de points, pas de %).
+export function tabRoundStats(rounds, results, predictions, initialPlayers = []) {
   return rounds.map((round, ri) => {
     let pts = 0, correct = 0, played = 0;
     ((results[`round${ri}`] || [])).forEach((off, mi) => {
-      if (!off) return;
+      if (!off || isByeMatch(initialPlayers, ri, mi)) return;
       played++;
       if ((predictions[`round${ri}`] || [])[mi] === off) { correct++; pts += round.points; }
     });
@@ -16,12 +23,12 @@ export function tabRoundStats(rounds, results, predictions) {
 }
 
 // Points par round pour un pronostic tableau.
-export function tabRoundScores(rounds, results, predictions) {
-  return tabRoundStats(rounds, results, predictions).map(s => s.pts);
+export function tabRoundScores(rounds, results, predictions, initialPlayers = []) {
+  return tabRoundStats(rounds, results, predictions, initialPlayers).map(s => s.pts);
 }
 
-export function tabScore(rounds, results, predictions) {
-  return tabRoundScores(rounds, results, predictions).reduce((a, b) => a + b, 0);
+export function tabScore(rounds, results, predictions, initialPlayers = []) {
+  return tabRoundScores(rounds, results, predictions, initialPlayers).reduce((a, b) => a + b, 0);
 }
 
 // Score maximal théorique encore atteignable (pour le suspense).
@@ -35,7 +42,7 @@ export function tabMax(rounds, results, initialPlayers, predictions) {
   let score = 0;
   rounds.forEach((round, ri) => {
     (predictions[`round${ri}`] || []).forEach((w, mi) => {
-      if (!w) return;
+      if (!w || isByeMatch(initialPlayers, ri, mi)) return;
       const off = (results[`round${ri}`] || [])[mi];
       if (off === w) { score += round.points; return; }
       if (off !== null && off !== undefined) return;
@@ -136,6 +143,8 @@ export function matchStats(matches, predictions, format = 'bo3') {
   let bons = 0, exacts = 0, pts = 0;
   matches.forEach(m => {
     if (!m.result) return;
+    if (m.player1 === 'Bye' || m.player2 === 'Bye') return; // qualification d'office
+
     const pred = (predictions || {})[m.id];
     if (!pred || !pred.winner) return;
     if (pred.winner === m.result.winner) {

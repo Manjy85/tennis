@@ -8,6 +8,8 @@ function calcScore(player) {
   let score = 0;
   state.rounds.forEach((round, ri) => {
     (player.predictions[`round${ri}`] || []).forEach((winner, mi) => {
+      // Bye = qualification d'office, aucun point.
+      if (ri === 0 && (state.initialPlayers[mi * 2] === 'Bye' || state.initialPlayers[mi * 2 + 1] === 'Bye')) return;
       if (winner && winner === (state.officialResults[`round${ri}`] || [])[mi]) score += round.points;
     });
   });
