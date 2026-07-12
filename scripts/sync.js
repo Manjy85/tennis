@@ -19,6 +19,7 @@ const admin = require('firebase-admin');
 const { importMatches } = require('./tennis-api');
 const { importWikipediaDraw } = require('./wikipedia-draw');
 const { detectReplacements, reopenBranch, applyToOfficial } = require('./replacements');
+const { discoverAtpDraws } = require('./discover');
 
 // Journal du run : toutes les lignes loggées sont aussi capturées, puis écrites
 // dans app/syncStatus en fin de run (affiché dans l'admin avec le timer).
@@ -102,9 +103,14 @@ async function syncWikipedia(db, tournamentId, name, page) {
   const snap = await ref.get();
 
   if (!snap.exists) {
+    // Catégorie (barème du classement général) : bo5 = Grand Chelem, 64+ =
+    // Masters 1000, sinon ATP 250 par défaut (les 500 se corrigent dans l'admin).
+    const category = draw.format === 'bo5' ? 'gs' : draw.initialPlayers.length >= 64 ? 'm1000' : 'atp250';
     await ref.set({
       name,
       createdAt: new Date().toISOString(),
+      category,
+      wikipediaPage: page,
       rg_initialPlayers: draw.initialPlayers,
       rg_rounds: rounds,
       rg_results: officialResults,
@@ -120,6 +126,12 @@ async function syncWikipedia(db, tournamentId, name, page) {
   }
 
   const existing = snap.data();
+
+  // Mémorise la page Wikipedia sur le doc : permet à la découverte automatique
+  // de reconnaître un tournoi existant au lieu d'en recréer un double.
+  if (existing.wikipediaPage !== page) {
+    await ref.set({ wikipediaPage: page }, { merge: true });
+  }
 
   // Garde-fou : si le tirage stocké ne correspond plus (autre tournoi, tableau
   // modifié à la main), on ne touche à rien.
@@ -326,6 +338,39 @@ async function main() {
   const apiIntervalMin = 75 * apiCount;
   const apiDue = force || !status.lastRapidApiAt || now - Date.parse(status.lastRapidApiAt) >= apiIntervalMin * 60000;
   const wikiDue = force || !status.lastWikipediaAt || now - Date.parse(status.lastWikipediaAt) >= 60 * 60000;
+
+  // Découverte automatique des tournois ATP de la saison (voir discover.js) :
+  // les tournois dont le tirage vient d'être publié sur Wikipedia s'ajoutent
+  // tout seuls, sans toucher à tracked-tournaments.json.
+  if (wikiDue) {
+    const discoveryRef = db.collection('app').doc('autoDiscovery');
+    const discoveryData = (await discoveryRef.get()).data() || {};
+    const year = new Date(now).getUTCFullYear();
+    const { entries, newStatus, log } = await discoverAtpDraws(discoveryData, year, now);
+    log.forEach(l => console.log(l));
+    await discoveryRef.set(newStatus);
+
+    // Jamais de doublon : un tournoi découvert est rattaché au doc existant
+    // s'il y en a un pour la même page Wikipedia ou le même nom (créé à la
+    // main dans l'admin, ou listé dans tracked-tournaments.json).
+    const already = new Set(tracked.map(t => t.wikipediaPage || `${t.type}:${t.seasonid}`));
+    const docsSnap = await db.collection('tournaments').select('name', 'wikipediaPage').get();
+    const pageToId = {}, nameSlugToId = {};
+    docsSnap.forEach(d => {
+      const v = d.data();
+      if (v.wikipediaPage) pageToId[v.wikipediaPage] = d.id;
+      nameSlugToId[slugify(v.name || d.id)] = d.id;
+    });
+    entries.forEach(e => {
+      if (already.has(e.wikipediaPage)) return;
+      const existingId = pageToId[e.wikipediaPage] || nameSlugToId[slugify(e.name)];
+      if (existingId && existingId !== e.tournamentId) {
+        console.log(`[découverte] ${e.name} : tournoi existant (${existingId}) — synchronisé sans recréation.`);
+        e.tournamentId = existingId;
+      }
+      tracked.push(e);
+    });
+  }
 
   let ranApi = false, ranWiki = false;
   for (const t of tracked) {

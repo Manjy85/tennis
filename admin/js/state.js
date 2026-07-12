@@ -51,6 +51,7 @@ export async function switchTournament(id) {
   if (!data) return;
   state.currentTournamentId = id;
   state.tournamentName = data.name || id;
+  state.category = data.category || '';
   // Prono Tableau
   state.initialPlayers  = data.rg_initialPlayers || Array(16).fill('').map((_, i) => `Joueur ${i + 1}`);
   state.rounds          = data.rg_rounds         || defaultRounds.map(r => ({ ...r }));
@@ -87,6 +88,11 @@ export async function createTournament(name) {
   state.tournamentList.push({ id, name });
   await switchTournament(id);
   return id;
+}
+
+export function saveCategory() {
+  if (!state.currentTournamentId) return;
+  saveTournament(state.currentTournamentId, { category: state.category || '' }).catch(console.error);
 }
 
 export function saveTableau() {

@@ -119,7 +119,7 @@ export function showBracket(uid, containerId = 'content') {
 
   let html = `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
     <h2 style="margin:0;">Tableau de ${player.name}</h2>`;
-  if (!isMine(player)) html += `<span style="color:#888; font-weight:bold;" title="Tableau d'un autre joueur — lecture seule">👁️ Lecture seule</span>`;
+  if (!isMine(player)) html += `<span style="color:#888; font-weight:bold;" title="Tableau d'un autre joueur — ses pronostics n'apparaissent que sur les matchs déjà joués">👁️ Lecture seule — picks visibles après chaque match joué</span>`;
   else if (!player.locked) html += `<button class="red" title="Verrouille définitivement ton tableau : plus aucune modification possible ensuite" onclick="lockBracket('${player.uid}')">🔒 Verrouiller</button>`;
   else html += `<span style="color:#0c6b2f; font-weight:bold;" title="Tableau verrouillé — modification impossible">🔒 Verrouillé</span>`;
   html += `</div>`;
@@ -139,8 +139,15 @@ export function showBracket(uid, containerId = 'content') {
 
   html += `<div class="bracket" style="min-height:${minH}px; --match-height:${H}px;">`;
 
+  // Anti-triche : sur le tableau d'un autre joueur, l'arbre est construit à
+  // partir des résultats OFFICIELS (pas de ses picks), et ses picks ne sont
+  // révélés que sur les matchs dont le résultat est connu.
+  const owner = isMine(player);
+
   state.rounds.forEach((round, ri) => {
-    const roundPlayers = ri === 0 ? state.initialPlayers : (player.predictions[`round${ri - 1}`] || []);
+    const roundPlayers = ri === 0 ? state.initialPlayers
+      : owner ? (player.predictions[`round${ri - 1}`] || [])
+      : (state.officialResults[`round${ri - 1}`] || []);
     const isCollapsed  = uiState.hiddenRounds.has(ri);
     const visIdx       = Math.max(0, ri - firstVisible);
     const baseGap      = Math.max(8, Math.round(16 * (uiState.hiddenRounds.size > 0 ? 0.7 : 1)));
@@ -171,8 +178,10 @@ export function showBracket(uid, containerId = 'content') {
           if (!p) return;
           const meta  = getPlayerMetaParts(p);
           const parts = splitDisplayName(p);
-          const sel   = player.predictions[`round${ri}`][i] === p;
           const off   = (state.officialResults[`round${ri}`] || [])[i];
+          const played = off !== null && off !== undefined;
+          // Pick visible : toujours pour soi, seulement si le match est joué pour les autres.
+          const sel   = (player.predictions[`round${ri}`] || [])[i] === p && (owner || played);
           let cls = 'player-btn' + (sel ? ' selected' : '');
           if (sel && off !== null && off !== undefined) cls += (off === p ? ' correct' : ' incorrect');
           html += `<button class="${cls}" onclick="selectWinner('${player.uid}',${ri},${i},'${p.replace(/'/g,"\\'")}')" ${slotEditable ? '' : 'disabled'}>

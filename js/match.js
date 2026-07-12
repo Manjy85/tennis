@@ -14,6 +14,9 @@ export function matchFilledOf(player) {
   return { filled, total };
 }
 
+// Points d'un score exact : 2 en bo3, 3 en bo5 (voir ranking.js).
+function exactPts() { return state.format === 'bo5' ? 3 : 2; }
+
 function calcScore(player) {
   let score = 0;
   state.matches.forEach(match => {
@@ -22,7 +25,7 @@ function calcScore(player) {
     if (!pred.winner) return;
     const okWinner = pred.winner === match.result.winner;
     const okScore  = okWinner && pred.score === match.result.score;
-    if (okScore)       score += 3;
+    if (okScore)       score += exactPts();
     else if (okWinner) score += 1;
   });
   return score;
@@ -54,7 +57,7 @@ function matchCardHtml(match, pred, editable, scores, uid) {
   if (result && pred.winner) {
     const okWinner = pred.winner === result.winner;
     const okScore  = okWinner && pred.score === result.score;
-    if (okScore)       { cardClass = 'correct';   statusIcon = '✅ +3 pts'; }
+    if (okScore)       { cardClass = 'correct';   statusIcon = `✅ +${exactPts()} pts`; }
     else if (okWinner) { cardClass = 'partial';   statusIcon = '🟡 +1 pt'; }
     else               { cardClass = 'incorrect'; statusIcon = '❌ 0 pt'; }
   } else if (isLocked) { cardClass = 'locked'; }
@@ -176,7 +179,7 @@ function recapResultLine(p1, p2, pred, result) {
   const wName = result.winner === 'player1' ? p1 : p2;
   const hasPred = !!(pred.winner && pred.score);
   if (hasPred && pred.winner === result.winner && pred.score === result.score) {
-    return `<div class="recap-result exact">✅ Score exact +3</div>`;
+    return `<div class="recap-result exact">✅ Score exact +${exactPts()}</div>`;
   }
   let pts = '';
   if (hasPred || pred.winner) {

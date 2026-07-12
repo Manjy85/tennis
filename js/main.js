@@ -1,6 +1,6 @@
 import { state, loadState, switchTournament, setMe } from './state.js';
 import { loadTournament, loadTableauPreds, loadMatchPreds } from './firebase.js';
-import { tabRoundScores, tabScore, tabMax, matchStats } from './ranking.js';
+import { tabRoundScores, tabScore, tabMax, matchStats, generalRanking, categoryOf, CATEGORY_LABELS } from './ranking.js';
 import { ensureMyTableau, showBracket, selectWinner, lockBracket, toggleRound } from './tableau.js';
 import { ensureMyMatch, showMatchsRestants, showRecap, toggleRecapRound, pickWinner, pickScore, lockMatch } from './match.js';
 import {
@@ -79,18 +79,65 @@ async function showClassement() {
   let html = `<h2>Classement</h2>`;
   let myRemaining = 0;
 
+  // ── Classements généraux (points ATP par tournoi selon la place) ──
+  const tGeneralInput = [], mGeneralInput = [];
   bundles.forEach(({ t, doc, tPreds, mPreds }) => {
+    const category = categoryOf(doc);
+    const bracketSize = (doc.rg_initialPlayers || []).length || null;
+    tGeneralInput.push({ name: t.name, category, bracketSize,
+      rows: tPreds.map(p => ({ uid: p.uid, name: p.displayName || p.uid,
+        pts: tabScore(doc.rg_rounds || [], doc.rg_results || {}, p.predictions || {}) })) });
+    mGeneralInput.push({ name: t.name, category, bracketSize,
+      rows: mPreds.map(p => ({ uid: p.uid, name: p.displayName || p.uid,
+        pts: matchStats(doc.pm_matches || [], p.predictions || {}, doc.pm_format || 'bo3').pts })) });
+  });
+  const renderGeneral = (title, ranking) => {
+    if (!ranking.length) return '';
+    let h = `<section class="ranking-block general">
+      <div class="ranking-title-row"><h3 class="ranking-title">${title}</h3></div>
+      <div class="table-scroll"><table class="ranking-table"><thead><tr>
+        <th>#</th><th>Joueur</th><th>Points ATP</th><th>Détail</th></tr></thead><tbody>`;
+    ranking.forEach((r, i) => {
+      const me = state.me && r.uid === state.me.uid;
+      const detail = r.details.map(d => `${d.tournament} : ${d.rank}ᵉ (+${d.atp})`).join(' · ');
+      h += `<tr class="${me ? 'is-me-row' : ''}">
+        <td>${i + 1}</td>
+        <td><strong>${r.name}</strong>${me ? ' <span class="mine-tag">toi</span>' : ''}</td>
+        <td class="pts">${r.atp} pts</td>
+        <td style="font-size:12px; color:#777;">${detail}</td>
+      </tr>`;
+    });
+    return h + `</tbody></table></div></section>`;
+  };
+  html += renderGeneral('🌍 Classement général — Tableau', generalRanking(tGeneralInput));
+  html += renderGeneral('🌍 Classement général — Match', generalRanking(mGeneralInput));
+
+  // Tournoi terminé (tous les résultats rentrés = la finale a un vainqueur) :
+  // archivé à l'affichage, mais compte toujours dans les classements généraux.
+  const isFinished = ({ doc }) => {
+    const rounds = doc.rg_rounds || [];
+    const res = doc.rg_results || {};
+    return rounds.length > 0 && !!(res[`round${rounds.length - 1}`] || [])[0];
+  };
+
+  const renderBlock = ({ t, doc, tPreds, mPreds }, archived) => {
+    let html = '';
     const rounds = doc.rg_rounds || [];
     const results = doc.rg_results || {};
     const initialPlayers = doc.rg_initialPlayers || [];
     const matches = doc.pm_matches || [];
+    const category = categoryOf(doc);
+    // Tournoi commencé = au moins un résultat officiel : inscriptions closes.
+    const started = Object.values(results).flat().some(Boolean) || matches.some(m => m.result);
 
     const iAmIn = state.me && (tPreds.some(p => p.uid === state.me.uid) || mPreds.some(p => p.uid === state.me.uid));
     html += `<section class="ranking-block">
       <div class="ranking-title-row">
-        <h3 class="ranking-title">🎾 ${t.name}</h3>
-        ${state.me && !iAmIn ? `<button class="btn-join-small" onclick="joinFromRanking('${t.id}')">🙋 Participer</button>` : ''}
-        ${iAmIn ? `<span class="participating-tag">✓ Tu participes</span>` : ''}
+        <h3 class="ranking-title">🎾 ${t.name} <span class="cat-badge">${CATEGORY_LABELS[category]}</span></h3>
+        ${archived ? `<span class="closed-tag">🏁 Terminé</span>` : ''}
+        ${!archived && state.me && !iAmIn && !started ? `<button class="btn-join-small" onclick="joinFromRanking('${t.id}')">🙋 Participer</button>` : ''}
+        ${!archived && state.me && !iAmIn && started ? `<span class="closed-tag" title="Le tournoi a commencé, on ne peut plus s'inscrire">🔒 Inscriptions closes</span>` : ''}
+        ${!archived && iAmIn ? `<span class="participating-tag">✓ Tu participes</span>` : ''}
       </div>`;
 
     // ── Table Tableau (détail par round + Max) ──
@@ -115,7 +162,8 @@ async function showClassement() {
         const me = state.me && r.uid === state.me.uid;
         html += `<tr class="${me ? 'is-me-row' : ''}">
           <td>${i + 1}</td>
-          <td><strong>${r.name}</strong>${me ? ' <span class="mine-tag">toi</span>' : ''}</td>
+          <td><a href="#" class="player-link" title="Voir son tableau (les matchs non joués restent masqués)"
+            onclick="event.preventDefault(); viewBracket('${t.id}','${r.uid}')"><strong>${r.name}</strong></a>${me ? ' <span class="mine-tag">toi</span>' : ''}</td>
           <td>${r.locked ? '🔒 Prêt' : '✏️ En cours'}</td>
           ${r.roundScores.map(p => `<td>${p}</td>`).join('')}
           <td class="pts">${r.total} pts</td>
@@ -127,7 +175,7 @@ async function showClassement() {
 
     // ── Mini-table Match ──
     const mRows = mPreds.map(p => {
-      const s = matchStats(matches, p.predictions || {});
+      const s = matchStats(matches, p.predictions || {}, doc.pm_format || 'bo3');
       return { name: p.displayName || p.uid, uid: p.uid, ...s };
     }).filter(r => r.bons || r.exacts || r.pts || true).sort((a, b) => b.pts - a.pts || b.exacts - a.exacts);
 
@@ -152,8 +200,8 @@ async function showClassement() {
     html += `</section>`;
 
     // Comptage des pronostics restants de l'utilisateur (pour le bandeau) —
-    // uniquement dans les tournois auxquels il participe.
-    if (state.me) {
+    // uniquement dans les tournois actifs auxquels il participe.
+    if (state.me && !archived) {
       const myT = tPreds.find(p => p.uid === state.me.uid);
       const myM = mPreds.find(p => p.uid === state.me.uid);
       if (myT || myM) {
@@ -164,7 +212,17 @@ async function showClassement() {
         if (myM) myRemaining += Math.max(0, matches.length - mLocked);
       }
     }
-  });
+    return html;
+  };
+
+  bundles.filter(b => !isFinished(b)).forEach(b => { html += renderBlock(b, false); });
+  const archivedBundles = bundles.filter(isFinished);
+  if (archivedBundles.length) {
+    html += `<details class="archive-block">
+      <summary>🗄️ Tournois terminés (${archivedBundles.length})</summary>`;
+    archivedBundles.forEach(b => { html += renderBlock(b, true); });
+    html += `</details>`;
+  }
 
   // Bandeau d'appel à l'action en tête.
   let banner = '';
@@ -205,17 +263,21 @@ function showMesPronos() {
   // Participation explicite : consulter un tournoi n'inscrit pas — on ne crée
   // les docs de pronostic qu'au clic sur "Je participe".
   if (!isParticipating()) {
+    const started = currentTournamentStarted();
     content.innerHTML = `
       <div class="pronos-head">
         <h2>Mes Pronostics</h2>
         ${selector}
       </div>
       <div class="join-card">
-        <div class="join-emoji">🎾</div>
+        <div class="join-emoji">${started ? '🔒' : '🎾'}</div>
         <h3>${state.tournamentName}</h3>
-        <p>Tu ne participes pas encore à ce tournoi.<br>
-        Rejoins-le pour remplir ton tableau et pronostiquer les matchs — tu choisis librement les tournois auxquels tu participes.</p>
-        <button class="btn-primary" onclick="joinTournament()">🙋 Je participe à ce tournoi</button>
+        ${started
+          ? `<p>Le tournoi a commencé : les inscriptions sont closes.<br>
+             Tu pourras rejoindre le prochain tournoi dès son ouverture.</p>`
+          : `<p>Tu ne participes pas encore à ce tournoi.<br>
+             Un seul clic t'inscrit aux deux jeux (Tableau + Matchs) — jusqu'au premier match joué.</p>
+             <button class="btn-primary" onclick="joinTournament()">🙋 Je participe à ce tournoi</button>`}
       </div>`;
     return;
   }
@@ -235,11 +297,33 @@ function showMesPronos() {
   renderPronosBody();
 }
 
+// Le tournoi courant a-t-il commencé ? (au moins un résultat officiel)
+function currentTournamentStarted() {
+  return Object.values(state.officialResults || {}).flat().some(Boolean)
+    || (state.matches || []).some(m => m.result);
+}
+
 window.joinTournament = () => {
   if (!state.me) return window.requireLogin();
+  if (currentTournamentStarted()) return alert('Le tournoi a commencé, les inscriptions sont closes.');
   ensureMyTableau();
   ensureMyMatch();
   showMesPronos();
+};
+
+// Voir le tableau d'un autre joueur depuis le classement (lecture seule ;
+// ses picks sur les matchs non joués sont masqués par showBracket).
+window.viewBracket = async (tournamentId, uid) => {
+  const content = document.getElementById('content');
+  if (tournamentId !== state.currentTournamentId) {
+    content.innerHTML = '<p style="text-align:center;padding:40px;color:#666;">Chargement...</p>';
+    await switchTournament(tournamentId);
+  }
+  content.innerHTML = `
+    <a href="#" class="back-link" style="display:inline-block;margin-bottom:12px;"
+      onclick="event.preventDefault(); goHome();">← Retour au classement</a>
+    <div id="view-bracket-body"></div>`;
+  showBracket(uid, 'view-bracket-body');
 };
 
 // Rejoindre un tournoi depuis la page Classement : bascule dessus puis ouvre
@@ -247,6 +331,10 @@ window.joinTournament = () => {
 window.joinFromRanking = async (id) => {
   if (!state.me) return window.requireLogin();
   if (id !== state.currentTournamentId) await switchTournament(id);
+  if (currentTournamentStarted()) {
+    alert('Le tournoi a commencé, les inscriptions sont closes.');
+    return showClassement();
+  }
   ensureMyTableau();
   ensureMyMatch();
   setActiveNav('pronos');

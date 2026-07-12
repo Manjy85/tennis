@@ -291,4 +291,4 @@ async function importWikipediaDraw(page) {
   return { initialPlayers, playerMeta, results, format: bestOf === 5 ? 'bo5' : 'bo3', warnings };
 }
 
-module.exports = { importWikipediaDraw };
+module.exports = { importWikipediaDraw, wikiGet };

@@ -1,4 +1,4 @@
-import { state, loadState, switchTournament, createTournament, saveTableau, savePmMatch, ensurePlayerMeta, syncMatchesFromBracket } from './state.js';
+import { state, loadState, switchTournament, createTournament, saveTableau, savePmMatch, saveCategory, ensurePlayerMeta, syncMatchesFromBracket } from './state.js';
 import { deleteTournament, deleteTableauPred, deleteMatchPred, loadSyncStatus } from './firebase.js';
 import { renderContent } from './render.js';
 import {
@@ -212,6 +212,23 @@ function buildConfig() {
   });
   html += `</tr></tbody></table>
     <br><button class="btn-blue" onclick="adminSavePoints()">Sauvegarder le barème</button>
+  </div>`;
+
+  // Catégorie : sert au barème du classement général (points ATP).
+  // Vide = auto : bo5/128 joueurs -> Grand Chelem, 64+ -> Masters 1000, sinon ATP 250.
+  html += `<div class="box">
+    <h3>Catégorie du tournoi (classement général)</h3>
+    <div class="form-row">
+      <select id="categoryInput">
+        <option value=""       ${!state.category ? 'selected' : ''}>Auto (déduite de la taille/format)</option>
+        <option value="gs"     ${state.category === 'gs' ? 'selected' : ''}>Grand Chelem — 2000 pts au vainqueur</option>
+        <option value="m1000"  ${state.category === 'm1000' ? 'selected' : ''}>Masters 1000 — 1000 pts</option>
+        <option value="atp500" ${state.category === 'atp500' ? 'selected' : ''}>ATP 500 — 500 pts</option>
+        <option value="atp250" ${state.category === 'atp250' ? 'selected' : ''}>ATP 250 — 250 pts</option>
+      </select>
+      <button class="btn-blue" onclick="adminSaveCategory()">Sauvegarder</button>
+    </div>
+    <p style="font-size:13px; color:#888; margin:4px 0 0;">⚠️ L'auto ne distingue pas un ATP 500 d'un 250 — à régler ici pour les 500.</p>
   </div>`;
 
   html += `<div class="box">
@@ -633,6 +650,12 @@ window.adminSavePoints = () => {
   });
   saveTableau();
   alert('Barème mis à jour.');
+};
+
+window.adminSaveCategory = () => {
+  state.category = document.getElementById('categoryInput').value;
+  saveCategory();
+  alert('Catégorie mise à jour.');
 };
 
 window.adminSaveFormat = () => {
