@@ -330,7 +330,8 @@ async function syncRapidApi(db, tournamentId, name, type, seasonid) {
 async function main() {
   const configPath = path.join(__dirname, 'tracked-tournaments.json');
   const tracked = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  if (!tracked.length) { console.log('Aucun tournoi suivi (tracked-tournaments.json est vide).'); return; }
+  // Un fichier vide n'arrête PAS le run : la découverte automatique alimente
+  // la liste toute seule (le fichier ne sert plus qu'aux ajouts manuels).
 
   admin.initializeApp({ credential: admin.credential.cert(require('./serviceAccountKey.json')) });
   const db = admin.firestore();
