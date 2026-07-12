@@ -10,6 +10,9 @@ const auth = getAuth(app);
 auth.useDeviceLanguage();
 
 const googleProvider = new GoogleAuthProvider();
+// Toujours proposer le choix du compte Google (sinon le dernier compte
+// utilisé est repris silencieusement et on ne peut pas en changer).
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // Notifie à chaque changement d'état (connexion / déconnexion).
 export function onAuth(cb) {
